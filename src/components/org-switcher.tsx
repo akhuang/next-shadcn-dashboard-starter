@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, ChevronsUpDown, GalleryVerticalEnd } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
+import { OrderNetworkIcon } from '@/components/icons/order-fulfillment-icon';
 
 import {
   DropdownMenu,
@@ -53,11 +54,11 @@ export function OrgSwitcher({
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
               <div className='bg-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
-                <GalleryVerticalEnd className='size-4' />
+                <OrderNetworkIcon className='size-4' />
               </div>
               <div className='flex flex-col gap-0.5 leading-none'>
-                <span className='font-semibold'>Next Starter</span>
-                <span className=''>{selectedTenant.name}</span>
+                <span className='font-semibold'>企业订单履行部</span>
+                {/* <span className='text-xs'>{selectedTenant.name}</span> */}
               </div>
               <ChevronsUpDown className='ml-auto' />
             </SidebarMenuButton>

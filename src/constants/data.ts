@@ -57,6 +57,39 @@ export const navItems: NavItem[] = [
     shortcut: ['k', 'k'],
     isActive: false,
     items: [] // No child items
+  },
+  {
+    title: 'Embedded',
+    url: '#',
+    icon: 'dashboard',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: [
+      {
+        title: 'Grafana',
+        url: '/dashboard/embedded/grafana',
+        icon: 'dashboard',
+        shortcut: ['g', 'g']
+      },
+      {
+        title: 'Metabase',
+        url: '/dashboard/embedded/metabase',
+        icon: 'dashboard',
+        shortcut: ['m', 'b']
+      },
+      {
+        title: 'Kibana',
+        url: '/dashboard/embedded/kibana',
+        icon: 'dashboard',
+        shortcut: ['k', 'b']
+      },
+      {
+        title: 'Tableau',
+        url: '/dashboard/embedded/tableau',
+        icon: 'dashboard',
+        shortcut: ['t', 'b']
+      }
+    ]
   }
 ];
 
