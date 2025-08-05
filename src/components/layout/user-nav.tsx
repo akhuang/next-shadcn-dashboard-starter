@@ -21,7 +21,7 @@ export function UserNav() {
     id: 'dev-user',
     fullName: 'Dev User',
     emailAddresses: [{ emailAddress: 'dev@example.com' }],
-    imageUrl: null
+    imageUrl: undefined
   };
 
   if (user) {

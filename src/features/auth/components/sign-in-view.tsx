@@ -6,7 +6,6 @@ import { IconStar } from '@tabler/icons-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Authentication',

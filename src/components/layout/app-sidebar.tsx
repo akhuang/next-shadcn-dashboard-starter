@@ -68,7 +68,7 @@ export default function AppSidebar() {
     id: 'dev-user',
     fullName: 'Dev User',
     emailAddresses: [{ emailAddress: 'dev@example.com' }],
-    imageUrl: null
+    imageUrl: undefined
   };
   const router = useRouter();
   const handleSwitchTenant = (_tenantId: string) => {
