@@ -8,6 +8,12 @@ services:
       dockerfile: scripts/docker/Dockerfile
       args:
         - NODE_ENV=production
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - NO_PROXY=${NO_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+        - no_proxy=${NO_PROXY}
     container_name: nextjs-dashboard-app
     restart: unless-stopped
     working_dir: /app

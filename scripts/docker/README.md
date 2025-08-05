@@ -57,8 +57,26 @@
 - HTTP: http://localhost:${HTTP_PORT}
 - 默认: http://localhost:8088
 
+## 代理配置
+
+如果在内网环境需要通过代理访问外网，请在 `.env` 文件中配置：
+
+```bash
+# 取消注释并配置代理
+HTTP_PROXY=http://proxy.company.com:8080
+HTTPS_PROXY=http://proxy.company.com:8080
+NO_PROXY=localhost,127.0.0.1,*.local
+```
+
+或者在构建时直接指定：
+
+```bash
+HTTP_PROXY=http://proxy:8080 HTTPS_PROXY=http://proxy:8080 ../deploy.sh -b -u
+```
+
 ## 故障排除
 
 1. **端口冲突**：修改 `.env` 文件中的 `HTTP_PORT`
 2. **权限问题**：确保 Docker 有权限访问项目目录
 3. **网络问题**：检查防火墙和网络设置
+4. **代理问题**：确保 Docker 构建时能访问外网，配置代理环境变量

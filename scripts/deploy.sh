@@ -17,6 +17,22 @@ export HTTP_PORT=${HTTP_PORT:-8088}
 export HTTPS_PORT=${HTTPS_PORT:-8443}
 export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-nextjs-dashboard}
 
+# 传递代理环境变量（如果存在，支持大小写）
+if [ -n "$HTTP_PROXY" ] || [ -n "$http_proxy" ]; then
+    export HTTP_PROXY="${HTTP_PROXY:-$http_proxy}"
+    export http_proxy="${http_proxy:-$HTTP_PROXY}"
+    print_message "检测到 HTTP 代理: $HTTP_PROXY" "$YELLOW"
+fi
+if [ -n "$HTTPS_PROXY" ] || [ -n "$https_proxy" ]; then
+    export HTTPS_PROXY="${HTTPS_PROXY:-$https_proxy}"
+    export https_proxy="${https_proxy:-$HTTPS_PROXY}"
+    print_message "检测到 HTTPS 代理: $HTTPS_PROXY" "$YELLOW"
+fi
+if [ -n "$NO_PROXY" ] || [ -n "$no_proxy" ]; then
+    export NO_PROXY="${NO_PROXY:-$no_proxy}"
+    export no_proxy="${no_proxy:-$NO_PROXY}"
+fi
+
 set -e
 
 # 颜色定义
