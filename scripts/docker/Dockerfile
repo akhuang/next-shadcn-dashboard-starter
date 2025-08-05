@@ -27,8 +27,17 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY .npmrc ./
 
+# 配置 npm 代理（如果有代理的话）
+RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
+    if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy $HTTPS_PROXY; fi
+
 # 安装 pnpm 并安装依赖
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm@latest
+
+# 配置 pnpm 代理
+RUN if [ -n "$HTTP_PROXY" ]; then pnpm config set proxy $HTTP_PROXY; fi && \
+    if [ -n "$HTTPS_PROXY" ]; then pnpm config set https-proxy $HTTPS_PROXY; fi
+
 RUN pnpm install --frozen-lockfile
 
 # 多阶段构建 - 第二阶段：构建应用
@@ -44,7 +53,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
 # 构建应用
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm@latest
 RUN pnpm run build
 
 # 多阶段构建 - 第三阶段：生产运行
