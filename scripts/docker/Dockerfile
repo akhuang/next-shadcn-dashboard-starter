@@ -1,5 +1,21 @@
 # 多阶段构建 - 第一阶段：依赖安装
 FROM node:20-alpine AS deps
+
+# 配置代理环境变量（从构建参数传入）
+ARG HTTP_PROXY
+ARG HTTPS_PROXY  
+ARG NO_PROXY
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
+
+ENV HTTP_PROXY=${HTTP_PROXY:-${http_proxy}}
+ENV HTTPS_PROXY=${HTTPS_PROXY:-${https_proxy}}
+ENV NO_PROXY=${NO_PROXY:-${no_proxy}}
+ENV http_proxy=${http_proxy:-${HTTP_PROXY}}
+ENV https_proxy=${https_proxy:-${HTTPS_PROXY}}
+ENV no_proxy=${no_proxy:-${NO_PROXY}}
+
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
