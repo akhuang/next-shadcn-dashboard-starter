@@ -1,5 +1,6 @@
-# 多阶段构建 - 第一阶段：依赖安装
-FROM node:20-alpine AS deps
+# 多阶段构建 - 第一阶段：依赖安装  
+# 使用标准 Node.js 镜像，避免 Alpine 的兼容性问题
+FROM node:20-slim AS deps
 
 # 配置代理环境变量（从构建参数传入）
 ARG HTTP_PROXY
@@ -16,7 +17,10 @@ ENV http_proxy=${http_proxy:-${HTTP_PROXY}}
 ENV https_proxy=${https_proxy:-${HTTPS_PROXY}}
 ENV no_proxy=${no_proxy:-${NO_PROXY}}
 
-RUN apk add --no-cache libc6-compat
+# 安装基础工具（slim 镜像需要）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # 复制包管理文件
@@ -28,7 +32,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN pnpm install --frozen-lockfile
 
 # 多阶段构建 - 第二阶段：构建应用
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # 复制依赖
@@ -44,7 +48,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN pnpm run build
 
 # 多阶段构建 - 第三阶段：生产运行
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
