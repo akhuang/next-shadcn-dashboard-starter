@@ -27,16 +27,18 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY .npmrc ./
 
-# 配置 npm 代理（如果有代理的话）
+# 配置 npm 代理和 SSL（如果有代理的话）
 RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
-    if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy $HTTPS_PROXY; fi
+    if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy $HTTPS_PROXY; fi && \
+    npm config set strict-ssl false
 
 # 安装 pnpm 并安装依赖
 RUN npm install -g pnpm@latest
 
-# 配置 pnpm 代理
+# 配置 pnpm 代理和 SSL
 RUN if [ -n "$HTTP_PROXY" ]; then pnpm config set proxy $HTTP_PROXY; fi && \
-    if [ -n "$HTTPS_PROXY" ]; then pnpm config set https-proxy $HTTPS_PROXY; fi
+    if [ -n "$HTTPS_PROXY" ]; then pnpm config set https-proxy $HTTPS_PROXY; fi && \
+    pnpm config set strict-ssl false
 
 RUN pnpm install --frozen-lockfile
 

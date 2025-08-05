@@ -9,7 +9,10 @@ cd "$SCRIPT_DIR/docker" || exit 1
 
 # 加载环境变量
 if [ -f ".env" ]; then
-    export $(grep -v '^#' .env | xargs)
+    # 只加载非注释行且包含等号的行
+    set -a
+    source <(grep -v '^#' .env | grep '=' | sed 's/#.*$//')
+    set +a
 fi
 
 # 设置默认值
@@ -103,10 +106,11 @@ check_env() {
 build_images() {
     print_message "开始构建 Docker 镜像..." "$BLUE"
     
-    # 更新 Next.js 配置以支持 standalone 输出
-    if ! grep -q "output: 'standalone'" next.config.ts; then
-        print_message "更新 next.config.ts 配置..." "$YELLOW"
-        # 这里需要手动更新 next.config.ts
+    # 检查 Next.js 配置是否支持 standalone 输出
+    if grep -q "output: 'standalone'" ../../next.config.ts; then
+        print_message "✓ Next.js 已配置为 standalone 输出模式" "$GREEN"
+    else
+        print_message "警告: next.config.ts 未配置 standalone 输出，Docker 构建可能失败" "$YELLOW"
     fi
     
     docker-compose -f docker-compose.yml build --no-cache
