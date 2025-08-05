@@ -1,12 +1,15 @@
-import { auth } from '@clerk/nextjs/server';
+// import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
 export default async function Dashboard() {
-  const { userId } = await auth();
+  // const { userId } = await auth();
 
-  if (!userId) {
-    return redirect('/auth/sign-in');
-  } else {
-    redirect('/dashboard/overview');
-  }
+  // if (!userId) {
+  //   return redirect('/auth/sign-in');
+  // } else {
+  //   redirect('/dashboard/overview');
+  // }
+
+  // Auth disabled - always redirect to overview
+  redirect('/dashboard/overview');
 }
