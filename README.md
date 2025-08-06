@@ -42,25 +42,30 @@ vi .env
 
 # 清理资源
 ./deploy.sh -c
+
+# 重新加载 Nginx 模板配置
+./deploy.sh --reload-nginx
 ```
 
 ## 配置更新
 
-### 修改 Nginx 配置
+### 修改 Nginx 模板配置
 
-Nginx 配置文件：`scripts/docker/nginx/portal.conf`
+Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 
-修改后让配置生效：
+修改模板后让配置生效：
 
 ```bash
-# 方法 1：重启 Nginx 容器（推荐，无需重建）
-docker-compose restart nginx
+# 方法 1：使用部署脚本（推荐）
+./deploy.sh --reload-nginx
 
-# 方法 2：重新加载配置（最快，无停机）
+# 方法 2：使用专用脚本
+./reload-nginx-config.sh
+
+# 方法 3：手动操作
+docker-compose exec nginx rm -f /etc/nginx/conf.d/default.conf
+docker-compose exec nginx /docker-entrypoint.d/20-envsubst-on-templates.sh  
 docker-compose exec nginx nginx -s reload
-
-# 方法 3：完整重启
-./deploy.sh -r
 ```
 
 ### 修改应用代码
