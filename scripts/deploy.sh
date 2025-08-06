@@ -82,6 +82,7 @@ show_help() {
     echo "  -d, --down          停止容器"
     echo "  -r, --restart       重启容器"
     echo "  -l, --logs          查看日志"
+    echo "  --reload-nginx      重新加载 Nginx 模板配置"
     echo "  -c, --clean         清理未使用的镜像和容器"
     echo "  -s, --status        查看容器状态"
     echo "  --build-only        仅构建镜像，不启动容器"
@@ -186,6 +187,42 @@ show_logs() {
     else
         docker-compose -f docker-compose.yml logs -f "$1"
     fi
+}
+
+# 重新加载 Nginx 模板配置
+reload_nginx_config() {
+    print_message "🔄 重新加载 Nginx 模板配置..." "$BLUE"
+    
+    # 检查容器是否正在运行
+    if ! docker-compose ps nginx | grep -q "Up"; then
+        print_message "⚠️  Nginx 容器未运行，正在启动..." "$YELLOW"
+        docker-compose up -d nginx
+        return 0
+    fi
+
+    print_message "1️⃣ 删除已渲染的配置文件..." "$BLUE"
+    docker-compose exec nginx rm -f /etc/nginx/conf.d/default.conf
+
+    print_message "2️⃣ 重新渲染模板..." "$BLUE"
+    docker-compose exec nginx /docker-entrypoint.d/20-envsubst-on-templates.sh
+
+    print_message "3️⃣ 测试新配置..." "$BLUE"
+    if docker-compose exec nginx nginx -t; then
+        print_message "✅ 配置文件语法正确" "$GREEN"
+    else
+        print_message "❌ 配置文件语法错误，请检查模板" "$RED"
+        return 1
+    fi
+
+    print_message "4️⃣ 重新加载 Nginx..." "$BLUE"
+    docker-compose exec nginx nginx -s reload
+
+    print_message "✅ Nginx 配置重新加载完成！" "$GREEN"
+    
+    # 显示当前活动的配置预览
+    echo ""
+    print_message "📋 当前活动的 Nginx 配置预览：" "$BLUE"
+    docker-compose exec nginx head -20 /etc/nginx/conf.d/default.conf
 }
 
 # 清理未使用的资源
@@ -360,6 +397,10 @@ main() {
                 fi
                 shift
                 ;;
+            --reload-nginx)
+                RELOAD_NGINX=true
+                shift
+                ;;
             -c|--clean)
                 CLEAN=true
                 shift
@@ -413,6 +454,10 @@ main() {
     
     if [ "$LOGS" = true ]; then
         show_logs "$LOG_SERVICE"
+    fi
+    
+    if [ "$RELOAD_NGINX" = true ]; then
+        reload_nginx_config
     fi
     
     if [ "$CLEAN" = true ]; then
