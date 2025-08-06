@@ -15,6 +15,18 @@ if [ -f ".env" ]; then
     set +a
 fi
 
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# 打印带颜色的消息
+print_message() {
+    echo -e "${2}${1}${NC}"
+}
+
 # 设置默认值
 export HTTP_PORT=${HTTP_PORT:-8088}
 export HTTPS_PORT=${HTTPS_PORT:-8443}
@@ -37,18 +49,6 @@ if [ -n "$NO_PROXY" ] || [ -n "$no_proxy" ]; then
 fi
 
 set -e
-
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# 打印带颜色的消息
-print_message() {
-    echo -e "${2}${1}${NC}"
-}
 
 # 显示帮助信息
 show_help() {
