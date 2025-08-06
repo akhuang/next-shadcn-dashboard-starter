@@ -1,15 +1,31 @@
 #!/bin/bash
 
 # 部署脚本 - Next.js Dashboard with Nginx
-# 使用方法: ./scripts/deploy.sh [选项]
+# 使用方法: ./deploy.sh [选项]
 
 # 切换到脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 检查是否已经在 docker 目录（用于测试）
-if [ -f "$SCRIPT_DIR/docker-compose.yml" ]; then
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# 打印带颜色的消息
+print_message() {
+    echo -e "${2}${1}${NC}"
+}
+
+# 检查是否有 docker 子目录，如果有就进入
+if [ -d "$SCRIPT_DIR/docker" ] && [ -f "$SCRIPT_DIR/docker/docker-compose.yml" ]; then
+    cd "$SCRIPT_DIR/docker" || exit 1
+elif [ -f "$SCRIPT_DIR/docker-compose.yml" ]; then
     cd "$SCRIPT_DIR" || exit 1
 else
-    cd "$SCRIPT_DIR/docker" || exit 1
+    echo "错误: 找不到 docker-compose.yml 文件"
+    exit 1
 fi
 
 # 加载环境变量
@@ -112,7 +128,7 @@ build_images() {
     print_message "开始构建 Docker 镜像..." "$BLUE"
     
     # 检查 Next.js 配置是否支持 standalone 输出
-    if grep -q "output: 'standalone'" ../../next.config.ts; then
+    if grep -q "output: 'standalone'" ../../next.config.ts 2>/dev/null; then
         print_message "✓ Next.js 已配置为 standalone 输出模式" "$GREEN"
     else
         print_message "警告: next.config.ts 未配置 standalone 输出，Docker 构建可能失败" "$YELLOW"
@@ -185,8 +201,8 @@ check_health() {
     # 检查 Next.js 应用（通过容器内部网络）
     print_message "\n检查 Next.js 应用..." "$YELLOW"
     while [ $attempt -lt $max_attempts ] && [ "$app_healthy" = false ]; do
-        # 尝试直接访问容器
-        if docker-compose -f docker-compose.yml exec -T app wget --spider --timeout=5 --tries=1 http://localhost:3000 2>/dev/null; then
+        # 尝试直接访问容器 (使用 curl)
+        if docker-compose -f docker-compose.yml exec -T app curl -f --connect-timeout 5 --max-time 5 http://localhost:3000/api/health 2>/dev/null; then
             app_healthy=true
             print_message "✓ Next.js 应用运行正常" "$GREEN"
         else

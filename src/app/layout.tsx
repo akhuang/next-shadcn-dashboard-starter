@@ -17,7 +17,6 @@ const META_THEME_COLORS = {
 
 export const metadata: Metadata = {
   title: '订单履行管理系统',
-  titleTemplate: '%s | Order Fulfillment Dashboard',
   description: '企业订单履行部供应链订单履行经理专用管理平台',
   icons: {
     icon: '/favicon.svg',
