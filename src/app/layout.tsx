@@ -16,8 +16,14 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: '订单履行管理系统',
+  titleTemplate: '%s | Order Fulfillment Dashboard',
+  description: '企业订单履行部供应链订单履行经理专用管理平台',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg'
+  }
 };
 
 export const viewport: Viewport = {
@@ -36,6 +42,9 @@ export default async function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
+        <link rel='icon' href='/favicon.svg' type='image/svg+xml' />
+        <link rel='shortcut icon' href='/favicon.svg' />
+        <link rel='apple-touch-icon' href='/favicon.svg' />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -90,6 +90,14 @@ export const navItems: NavItem[] = [
         shortcut: ['t', 'b']
       }
     ]
+  },
+  {
+    title: '字体测试',
+    url: '/dashboard/font-test',
+    icon: 'dashboard',
+    isActive: false,
+    shortcut: ['f', 't'],
+    items: [] // Empty array as there are no child items for Font Test
   }
 ];
 
