@@ -95,6 +95,11 @@ ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
+# 安装 curl 用于健康检查（slim 镜像默认没有）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # 创建非 root 用户
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

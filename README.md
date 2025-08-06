@@ -1,115 +1,176 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/9113740/201498864-2a900c64-d88f-4ed4-b5cf-770bcb57e1f5.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/9113740/201498152-b171abb8-9225-487a-821c-6ff49ee48579.png">
-</picture>
+# Next.js Dashboard Starter
 
-<div align="center"><strong>Next.js Admin Dashboard Starter Template With Shadcn-ui</strong></div>
-<div align="center">Built with the Next.js 15 App Router</div>
-<br />
-<div align="center">
-<a href="https://dub.sh/shadcn-dashboard">View Demo</a>
-<span>
-</div>
+基于 Next.js 15 + React 19 的现代化管理仪表板模板。
 
-## Overview
+## 快速部署
 
-This is a starter template using the following stack:
+### 1. 首次部署
 
-- Framework - [Next.js 15](https://nextjs.org/13)
-- Language - [TypeScript](https://www.typescriptlang.org)
-- Auth - [Clerk](https://go.clerk.com/ILdYhn7)
-- Error tracking - [<picture><img alt="Sentry" src="public/assets/sentry.svg">
-        </picture>](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)
-- Styling - [Tailwind CSS v4](https://tailwindcss.com)
-- Components - [Shadcn-ui](https://ui.shadcn.com)
-- Schema Validations - [Zod](https://zod.dev)
-- State Management - [Zustand](https://zustand-demo.pmnd.rs)
-- Search params state manager - [Nuqs](https://nuqs.47ng.com/)
-- Tables - [Tanstack Data Tables](https://ui.shadcn.com/docs/components/data-table) • [Dice table](https://www.diceui.com/docs/components/data-table)
-- Forms - [React Hook Form](https://ui.shadcn.com/docs/components/form)
-- Command+k interface - [kbar](https://kbar.vercel.app/)
-- Linting - [ESLint](https://eslint.org)
-- Pre-commit Hooks - [Husky](https://typicode.github.io/husky/)
-- Formatting - [Prettier](https://prettier.io)
+```bash
+# 进入部署目录
+cd scripts/docker
 
-_If you are looking for a Tanstack start dashboard template, here is the [repo](https://git.new/tanstack-start-dashboard)._
+# 修改端口配置（可选）
+vi .env
+# HTTP_PORT=8088   # HTTP 端口
+# HTTPS_PORT=8443  # HTTPS 端口
 
-## Pages
-
-| Pages                                                                                 | Specifications                                                                                                                                                                                                                                                          |
-| :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Signup / Signin](https://go.clerk.com/ILdYhn7)      | Authentication with **Clerk** provides secure authentication and user management with multiple sign-in options including passwordless authentication, social logins, and enterprise SSO - all designed to enhance security while delivering a seamless user experience. |
-| [Dashboard (Overview)](https://shadcn-dashboard.kiranism.dev/dashboard)    | Cards with Recharts graphs for analytics. Parallel routes in the overview sections feature independent loading, error handling, and isolated component rendering. |
-| [Product](https://shadcn-dashboard.kiranism.dev/dashboard/product)         | Tanstack tables with server side searching, filter, pagination by Nuqs which is a Type-safe search params state manager in nextjs                                                                                                                                       |
-| [Product/new](https://shadcn-dashboard.kiranism.dev/dashboard/product/new) | A Product Form with shadcn form (react-hook-form + zod).                                                                                                                                                                                                                |
-| [Profile](https://shadcn-dashboard.kiranism.dev/dashboard/profile)         | Clerk's full-featured account management UI that allows users to manage their profile and security settings                                                                                                                                                             |
-| [Kanban Board](https://shadcn-dashboard.kiranism.dev/dashboard/kanban)     | A Drag n Drop task management board with dnd-kit and zustand to persist state locally.                                                                                                                                                                                  |
-| [Not Found](https://shadcn-dashboard.kiranism.dev/dashboard/notfound)      | Not Found Page Added in the root level                                                                                                                                                                                                                                  |
-| [Global Error](https://sentry.io/for/nextjs/?utm_source=github&utm_medium=paid-community&utm_campaign=general-fy26q2-nextjs&utm_content=github-banner-project-tryfree)           | A centralized error page that captures and displays errors across the application. Integrated with **Sentry** to log errors, provide detailed reports, and enable replay functionality for better debugging. |
-
-## Feature based organization
-
-```plaintext
-src/
-├── app/ # Next.js App Router directory
-│ ├── (auth)/ # Auth route group
-│ │ ├── (signin)/
-│ ├── (dashboard)/ # Dashboard route group
-│ │ ├── layout.tsx
-│ │ ├── loading.tsx
-│ │ └── page.tsx
-│ └── api/ # API routes
-│
-├── components/ # Shared components
-│ ├── ui/ # UI components (buttons, inputs, etc.)
-│ └── layout/ # Layout components (header, sidebar, etc.)
-│
-├── features/ # Feature-based modules
-│ ├── feature/
-│ │ ├── components/ # Feature-specific components
-│ │ ├── actions/ # Server actions
-│ │ ├── schemas/ # Form validation schemas
-│ │ └── utils/ # Feature-specific utilities
-│ │
-├── lib/ # Core utilities and configurations
-│ ├── auth/ # Auth configuration
-│ ├── db/ # Database utilities
-│ └── utils/ # Shared utilities
-│
-├── hooks/ # Custom hooks
-│ └── use-debounce.ts
-│
-├── stores/ # Zustand stores
-│ └── dashboard-store.ts
-│
-└── types/ # TypeScript types
-└── index.ts
+# 一键构建并启动
+../deploy.sh -b -u
 ```
 
-## Getting Started
+访问地址：
+- HTTP: `http://localhost:8088` (自动跳转到 HTTPS)
+- HTTPS: `https://localhost:8443`
 
-> [!NOTE]  
-> We are using **Next 15** with **React 19**, follow these steps:
+### 2. 常用操作
 
-Clone the repo:
+```bash
+# 查看服务状态
+./deploy.sh -s
 
+# 查看日志
+./deploy.sh -l        # 所有日志
+./deploy.sh -l app    # 仅应用日志
+./deploy.sh -l nginx  # 仅 Nginx 日志
+
+# 重启服务
+./deploy.sh -r
+
+# 停止服务
+./deploy.sh -d
+
+# 清理资源
+./deploy.sh -c
 ```
-git clone https://github.com/Kiranism/next-shadcn-dashboard-starter.git
+
+## 配置更新
+
+### 修改 Nginx 配置
+
+Nginx 配置文件：`scripts/docker/nginx/portal.conf`
+
+修改后让配置生效：
+
+```bash
+# 方法 1：重启 Nginx 容器（推荐，无需重建）
+docker-compose restart nginx
+
+# 方法 2：重新加载配置（最快，无停机）
+docker-compose exec nginx nginx -s reload
+
+# 方法 3：完整重启
+./deploy.sh -r
 ```
 
-- `pnpm install` ( we have legacy-peer-deps=true added in the .npmrc)
-- Create a `.env.local` file by copying the example environment file:
-  `cp env.example.txt .env.local`
-- Add the required environment variables to the `.env.local` file.
-- `pnpm run dev`
+### 修改应用代码
 
-##### Environment Configuration Setup
+代码修改后让更改生效：
 
-To configure the environment for this project, refer to the `env.example.txt` file. This file contains the necessary environment variables required for authentication and error tracking.
+#### 方法 1：完整重建（最可靠）
+```bash
+# 重新构建镜像并启动
+./deploy.sh -b -u
+```
 
-You should now be able to access the application at http://localhost:3000.
+#### 方法 2：快速重建（开发时使用）
+```bash
+# 进入 docker 目录
+cd scripts/docker
 
-> [!WARNING]
-> After cloning or forking the repository, be cautious when pulling or syncing with the latest changes, as this may result in breaking conflicts.
+# 只重建应用容器
+docker-compose up -d --build app
 
-Cheers! 🥂
+# 或者分步执行
+docker-compose build app
+docker-compose up -d app
+```
+
+#### 方法 3：开发模式（最快）
+如需频繁修改代码，建议使用开发模式：
+
+1. 修改 `scripts/docker/docker-compose.yml`，添加代码挂载：
+```yaml
+services:
+  app:
+    volumes:
+      - ../../:/app  # 挂载源代码
+      - /app/node_modules  # 排除 node_modules
+      - /app/.next  # 排除构建产物
+```
+
+2. 使用开发命令启动：
+```bash
+docker-compose exec app pnpm run dev
+```
+
+## 端口配置
+
+修改 `scripts/docker/.env` 文件中的端口：
+
+```bash
+HTTP_PORT=9088   # 修改 HTTP 端口
+HTTPS_PORT=9443  # 修改 HTTPS 端口
+```
+
+修改后重启服务：
+```bash
+cd scripts && ./deploy.sh -r
+```
+
+## SSL 证书
+
+### 重新生成证书
+```bash
+cd scripts/docker
+
+# 删除旧证书
+rm -rf certs/
+
+# 生成新证书（自动包含本机 IP）
+./generate-certs.sh
+
+# 重启 Nginx
+docker-compose restart nginx
+```
+
+### 使用自定义证书
+将你的证书文件放入 `scripts/docker/certs/` 目录：
+- `portal.crt` - 证书文件
+- `portal.key` - 私钥文件
+
+## 故障排查
+
+### 1. 服务无法启动
+```bash
+cd scripts/docker
+
+# 查看详细日志
+docker-compose logs -f
+
+# 检查端口占用
+lsof -i :8088
+lsof -i :8443
+```
+
+### 2. Next.js 应用错误
+```bash
+cd scripts/docker
+
+# 进入容器调试
+docker-compose exec app sh
+
+# 查看应用日志
+docker-compose logs -f app
+```
+
+### 3. Nginx 配置错误
+```bash
+cd scripts/docker
+
+# 测试配置文件
+docker-compose exec nginx nginx -t
+
+# 查看错误日志
+docker-compose exec nginx cat /var/log/nginx/error.log
+```

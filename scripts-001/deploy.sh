@@ -212,7 +212,7 @@ check_health() {
     # 检查 Next.js 应用（通过容器内部网络）
     print_message "\n检查 Next.js 应用..." "$YELLOW"
     while [ $attempt -lt $max_attempts ] && [ "$app_healthy" = false ]; do
-        # 使用 curl 检查健康状态
+        # 尝试直接访问容器 (使用 curl)
         if docker-compose -f docker-compose.yml exec -T app curl -f --connect-timeout 5 --max-time 5 http://localhost:3000/api/health 2>/dev/null; then
             app_healthy=true
             print_message "✓ Next.js 应用运行正常" "$GREEN"
