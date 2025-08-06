@@ -60,7 +60,7 @@ export function OrgSwitcher({
                 <span className='font-semibold'>企业订单履行部</span>
                 {/* <span className='text-xs'>{selectedTenant.name}</span> */}
               </div>
-              <ChevronsUpDown className='ml-auto' />
+              <ChevronsUpDown className='ml-auto hidden' />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

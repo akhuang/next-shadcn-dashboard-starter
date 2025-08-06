@@ -2,6 +2,14 @@
 
 @import 'tw-animate-css';
 
+/* Import local fonts */
+@import '../../public/fonts/geist.css';
+@import '../../public/fonts/geist-mono.css';
+@import '../../public/fonts/inter.css';
+@import '../../public/fonts/instrument-sans.css';
+@import '../../public/fonts/mulish.css';
+@import '../../public/fonts/noto-sans-mono.css';
+
 @custom-variant dark (&:is(.dark *));
 
 @import './theme.css';
