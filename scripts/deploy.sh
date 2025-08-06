@@ -5,7 +5,12 @@
 
 # 切换到脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/docker" || exit 1
+# 检查是否已经在 docker 目录（用于测试）
+if [ -f "$SCRIPT_DIR/docker-compose.yml" ]; then
+    cd "$SCRIPT_DIR" || exit 1
+else
+    cd "$SCRIPT_DIR/docker" || exit 1
+fi
 
 # 加载环境变量
 if [ -f ".env" ]; then
@@ -120,11 +125,15 @@ build_images() {
 # 启动容器
 start_containers() {
     print_message "启动容器..." "$BLUE"
+    
+    # 确保环境变量被正确加载
+    source .env 2>/dev/null || true
+    
     docker-compose -f docker-compose.yml up -d
     print_message "✓ 容器启动完成" "$GREEN"
     
     print_message "\n等待服务就绪..." "$BLUE"
-    sleep 5
+    sleep 3
     
     # 检查健康状态
     check_health
@@ -163,27 +172,120 @@ clean_up() {
 check_health() {
     print_message "\n检查服务状态..." "$BLUE"
     
-    # 检查 Next.js 应用
-    if curl -sf http://localhost:3000 > /dev/null; then
-        print_message "✓ Next.js 应用运行正常" "$GREEN"
-    else
+    # 等待服务启动
+    local max_attempts=10
+    local attempt=0
+    local app_healthy=false
+    local nginx_healthy=false
+    
+    # 检查容器运行状态
+    print_message "检查容器状态..." "$YELLOW"
+    docker-compose -f docker-compose.yml ps
+    
+    # 检查 Next.js 应用（通过容器内部网络）
+    print_message "\n检查 Next.js 应用..." "$YELLOW"
+    while [ $attempt -lt $max_attempts ] && [ "$app_healthy" = false ]; do
+        # 尝试直接访问容器
+        if docker-compose -f docker-compose.yml exec -T app wget --spider --timeout=5 --tries=1 http://localhost:3000 2>/dev/null; then
+            app_healthy=true
+            print_message "✓ Next.js 应用运行正常" "$GREEN"
+        else
+            attempt=$((attempt + 1))
+            if [ $attempt -lt $max_attempts ]; then
+                print_message "  等待 Next.js 启动... ($attempt/$max_attempts)" "$YELLOW"
+                sleep 3
+            fi
+        fi
+    done
+    
+    if [ "$app_healthy" = false ]; then
         print_message "✗ Next.js 应用无响应" "$RED"
+        print_message "  提示: 请检查应用日志 (./deploy.sh -l app)" "$YELLOW"
     fi
     
     # 检查 Nginx
-    if curl -sf http://localhost:${HTTP_PORT}/health > /dev/null; then
-        print_message "✓ Nginx 运行正常" "$GREEN"
-    else
-        print_message "✗ Nginx 无响应" "$RED"
+    print_message "\n检查 Nginx 服务..." "$YELLOW"
+    attempt=0
+    while [ $attempt -lt $max_attempts ] && [ "$nginx_healthy" = false ]; do
+        # 使用更宽松的超时设置
+        if curl --connect-timeout 5 --max-time 10 -sf http://localhost:${HTTP_PORT}/health > /dev/null 2>&1; then
+            nginx_healthy=true
+            print_message "✓ Nginx 运行正常 (端口: ${HTTP_PORT})" "$GREEN"
+        else
+            attempt=$((attempt + 1))
+            if [ $attempt -lt $max_attempts ]; then
+                print_message "  等待 Nginx 启动... ($attempt/$max_attempts)" "$YELLOW"
+                sleep 2
+            fi
+        fi
+    done
+    
+    if [ "$nginx_healthy" = false ]; then
+        print_message "✗ Nginx 无响应 (端口: ${HTTP_PORT})" "$RED"
+        print_message "  提示: 请检查 Nginx 日志 (./deploy.sh -l nginx)" "$YELLOW"
+        # 尝试检查端口是否被占用
+        if lsof -i:${HTTP_PORT} > /dev/null 2>&1; then
+            print_message "  注意: 端口 ${HTTP_PORT} 已被占用" "$YELLOW"
+        fi
     fi
     
-    print_message "\n访问地址: http://localhost:${HTTP_PORT}" "$GREEN"
+    # 显示访问信息
+    if [ "$nginx_healthy" = true ]; then
+        print_message "\n✅ 服务已就绪!" "$GREEN"
+        print_message "本地访问: http://localhost:${HTTP_PORT}" "$GREEN"
+        
+        # 获取各种可能的 IP 地址（特别适配 VMware NAT 环境）
+        local vm_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+        local eth0_ip=$(ip addr show eth0 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)
+        local ens33_ip=$(ip addr show ens33 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)
+        
+        # 显示可用的访问地址
+        if [ ! -z "$vm_ip" ]; then
+            print_message "虚拟机访问: http://${vm_ip}:${HTTP_PORT}" "$GREEN"
+        fi
+        if [ ! -z "$eth0_ip" ] && [ "$eth0_ip" != "$vm_ip" ]; then
+            print_message "网络访问 (eth0): http://${eth0_ip}:${HTTP_PORT}" "$GREEN"
+        fi
+        if [ ! -z "$ens33_ip" ] && [ "$ens33_ip" != "$vm_ip" ]; then
+            print_message "网络访问 (ens33): http://${ens33_ip}:${HTTP_PORT}" "$GREEN"
+        fi
+        
+        print_message "\n💡 VMware NAT 网络提示:" "$YELLOW"
+        print_message "  - 确保 VMware 中端口转发已配置（Virtual Network Editor）" "$YELLOW"
+        print_message "  - 检查 Ubuntu 防火墙设置: sudo ufw status" "$YELLOW"
+        print_message "  - 如需从主机访问，使用虚拟机的 NAT IP 地址" "$YELLOW"
+    else
+        print_message "\n⚠️  服务可能未完全就绪，请检查日志" "$YELLOW"
+    fi
 }
 
 # 显示容器状态
 show_status() {
-    print_message "容器状态:" "$BLUE"
+    print_message "========================================" "$BLUE"
+    print_message "         部署状态检查" "$BLUE"
+    print_message "========================================" "$BLUE"
+    
+    # 显示容器状态
+    print_message "\n📦 容器状态:" "$BLUE"
     docker-compose -f docker-compose.yml ps
+    
+    # 显示容器健康状态
+    print_message "\n🏥 健康检查状态:" "$BLUE"
+    docker-compose -f docker-compose.yml ps --format "table {{.Name}}\t{{.Status}}"
+    
+    # 检查服务健康
+    check_health
+    
+    # 显示资源使用情况
+    print_message "\n📊 资源使用:" "$BLUE"
+    docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" nextjs-dashboard-app nextjs-dashboard-nginx 2>/dev/null || true
+    
+    # 显示最近的日志
+    print_message "\n📝 最近日志 (最后5行):" "$BLUE"
+    print_message "--- Next.js App ---" "$YELLOW"
+    docker-compose -f docker-compose.yml logs --tail=5 app 2>/dev/null || true
+    print_message "--- Nginx ---" "$YELLOW"
+    docker-compose -f docker-compose.yml logs --tail=5 nginx 2>/dev/null || true
 }
 
 # 主程序
