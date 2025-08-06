@@ -47,6 +47,47 @@ vi .env
 ./deploy.sh --reload-nginx
 ```
 
+## iframe 嵌入外部站点
+
+### 嵌入 HTTPS 站点
+
+直接在 iframe 中使用 HTTPS URL：
+
+```tsx
+<iframe src="https://example.com" />
+```
+
+### 嵌入 HTTP 站点
+
+使用 SecureIframe 组件自动处理：
+
+```tsx
+import { SecureIframe } from '@/components/secure-iframe';
+
+// 自动通过代理转换 HTTP 为 HTTPS
+<SecureIframe 
+  src="http://192.168.1.100:8080/dashboard"
+  className="w-full h-full"
+/>
+```
+
+或手动使用代理路径：
+
+```tsx
+// 原始: http://192.168.1.100:8080/app
+// 代理: /http-proxy/192.168.1.100:8080/app
+<iframe src="/http-proxy/192.168.1.100:8080/app" />
+```
+
+## 快速开发
+
+使用开发环境配置（构建更快）：
+
+```bash
+cd scripts/docker
+./quick-start.sh        # 自动检测并快速启动
+```
+
 ## 配置更新
 
 ### 修改 Nginx 模板配置

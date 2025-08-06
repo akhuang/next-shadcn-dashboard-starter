@@ -87,6 +87,8 @@ show_help() {
     echo "  -s, --status        查看容器状态"
     echo "  --build-only        仅构建镜像，不启动容器"
     echo "  --production        使用生产环境配置"
+    echo "  --dev               使用开发环境配置（快速构建）"
+    echo "  --cache             使用构建缓存（加速构建）"
     echo ""
     echo "示例:"
     echo "  $0 -b -u            构建并启动"

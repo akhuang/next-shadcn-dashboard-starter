@@ -1,0 +1,76 @@
+version: '3.9'
+
+# 开发环境配置 - 优化构建速度
+services:
+  # Next.js 应用 - 开发模式
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=development  # 开发模式，跳过优化
+      cache_from:
+        - nextjs-dashboard-app:cache  # 使用缓存层
+    container_name: nextjs-dashboard-app-dev
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - HOSTNAME=0.0.0.0
+      - TZ=Asia/Shanghai
+    networks:
+      - dashboard-network
+    volumes:
+      # 开发模式：挂载源代码，支持热重载
+      - ../../src:/app/src:delegated
+      - ../../public:/app/public:delegated  
+      - ../../uploads:/app/uploads
+      # 防止 node_modules 被覆盖
+      - /app/node_modules
+      - /app/.next
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx - 复用相同配置
+  nginx:
+    image: nginx:alpine
+    container_name: nextjs-dashboard-nginx-dev
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${HTTP_PORT:-8088}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    environment:
+      - TZ=Asia/Shanghai
+      - HTTPS_PORT=${HTTPS_PORT:-8443}
+    volumes:
+      - ./nginx/portal.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./certs:/etc/nginx/certs:ro
+      - nginx-logs:/var/log/nginx
+      - nginx-cache:/var/cache/nginx
+    networks:
+      - dashboard-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  dashboard-network:
+    driver: bridge
+
+volumes:
+  nginx-logs:
+    driver: local
+  nginx-cache:
+    driver: local
