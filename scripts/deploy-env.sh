@@ -244,8 +244,28 @@ reload_nginx() {
 # 清理
 cleanup() {
     print_message "🧹 清理未使用的资源..." "$BLUE"
-    docker system prune -f
+    
+    # 清理悬空镜像
+    print_message "  清理悬空镜像..." "$YELLOW"
+    docker image prune -f
+    
+    # 清理未使用的容器
+    print_message "  清理停止的容器..." "$YELLOW"
+    docker container prune -f
+    
+    # 清理未使用的网络
+    print_message "  清理未使用的网络..." "$YELLOW"
+    docker network prune -f
+    
+    # 清理未使用的卷（谨慎使用）
+    # docker volume prune -f
+    
+    # 显示清理结果
     print_message "✓ 清理完成" "$GREEN"
+    
+    # 显示剩余镜像
+    print_message "\n📦 剩余 Docker 镜像:" "$BLUE"
+    docker images | grep -E "nextjs|REPOSITORY" || true
 }
 
 # 显示状态

@@ -45,6 +45,43 @@
 ./scripts/deploy-env.sh dev -c
 ```
 
+### Docker 卷管理
+
+Docker 使用两种类型的卷来存储数据：
+
+#### 1. 绑定挂载（项目文件）
+这些直接挂载到本地目录，删除容器不会影响文件：
+- `../../uploads:/app/uploads` - 上传文件存储在本地
+- `../..:/app` - 源代码挂载（开发环境）
+- `./certs:/etc/nginx/certs:ro` - SSL 证书文件
+
+#### 2. 命名卷（Docker 管理）
+这些由 Docker 管理，存储在 Docker 数据目录中：
+- `nginx-logs` - Nginx 日志
+- `nginx-cache` - Nginx 缓存
+
+```bash
+# 查看所有卷
+docker volume ls
+
+# 查看特定卷详情
+docker volume inspect nextjs-dashboard-dev_nginx-logs
+
+# 查看未使用的卷
+docker volume ls -f dangling=true
+
+# ⚠️ 谨慎清理未使用的卷（可能包含重要数据）
+docker volume prune
+```
+
+**注意事项：**
+- 清理卷前请确认不包含重要数据
+- 命名卷删除后数据无法恢复
+- 绑定挂载的文件存储在本地，相对安全
+- 建议定期备份重要的卷数据
+
+```
+
 ## iframe 嵌入外部站点
 
 ### 嵌入 HTTPS 站点
