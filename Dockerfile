@@ -1,6 +1,6 @@
 # 多阶段构建 - 第一阶段：依赖安装  
 # 使用标准 Node.js 镜像，避免 Alpine 的兼容性问题
-FROM node:20-slim AS deps
+FROM node:20 AS deps
 
 # 配置代理环境变量（从构建参数传入）
 ARG HTTP_PROXY
@@ -18,11 +18,6 @@ ENV https_proxy=${https_proxy:-${HTTPS_PROXY}}
 ENV no_proxy=${no_proxy:-${NO_PROXY}}
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
-# 安装基础工具（slim 镜像需要）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # 复制包管理文件
@@ -45,7 +40,7 @@ RUN if [ -n "$HTTP_PROXY" ]; then pnpm config set proxy $HTTP_PROXY; fi && \
 RUN pnpm install --frozen-lockfile
 
 # 多阶段构建 - 第二阶段：构建应用
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 WORKDIR /app
 
 # 配置代理环境变量（从构建参数传入）
@@ -95,7 +90,7 @@ ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
-# 安装 curl 用于健康检查（slim 镜像默认没有）
+# 安装 curl 用于健康检查
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
