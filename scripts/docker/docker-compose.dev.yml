@@ -18,7 +18,11 @@ services:
     networks:
       - dashboard-network
     volumes:
-      # 不挂载，使用镜像内的文件
+      # 挂载源代码以支持热重载
+      - ../..:/app
+      # 使用 Docker volumes 提升性能
+      - /app/node_modules
+      - /app/.next
       - ../../uploads:/app/uploads
     expose:
       - "3000"
