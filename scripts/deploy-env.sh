@@ -61,6 +61,7 @@ set_environment() {
             COMPOSE_FILE="docker-compose.dev.yml"
             COMPOSE_PROJECT="nextjs-dashboard-dev"
             load_env_file ".env.dev"
+            setup_proxy_vars
             export DEV_HTTP_PORT=${DEV_HTTP_PORT:-8089}
             export DEV_HTTPS_PORT=${DEV_HTTPS_PORT:-8445}
             print_message "🔧 使用开发环境配置 (端口: $DEV_HTTP_PORT/$DEV_HTTPS_PORT)" "$BLUE"
@@ -70,6 +71,7 @@ set_environment() {
             COMPOSE_FILE="docker-compose.yml"
             COMPOSE_PROJECT="nextjs-dashboard"
             load_env_file ".env.prod"
+            setup_proxy_vars
             export HTTP_PORT=${HTTP_PORT:-8088}
             export HTTPS_PORT=${HTTPS_PORT:-8444}
             print_message "🚀 使用生产环境配置 (端口: $HTTP_PORT/$HTTPS_PORT)" "$BLUE"
@@ -81,6 +83,7 @@ set_environment() {
                 COMPOSE_FILE="docker-compose.dev.yml"
                 COMPOSE_PROJECT="nextjs-dashboard-dev"
                 load_env_file ".env.dev"
+                setup_proxy_vars
                 export DEV_HTTP_PORT=${DEV_HTTP_PORT:-8089}
                 export DEV_HTTPS_PORT=${DEV_HTTPS_PORT:-8445}
                 print_message "🔧 使用默认开发环境配置 (端口: $DEV_HTTP_PORT/$DEV_HTTPS_PORT)" "$BLUE"
@@ -116,19 +119,24 @@ load_env_file() {
     fi
 }
 
-# 传递代理环境变量
-if [ -n "$HTTP_PROXY" ] || [ -n "$http_proxy" ]; then
-    export HTTP_PROXY="${HTTP_PROXY:-$http_proxy}"
-    export http_proxy="${http_proxy:-$HTTP_PROXY}"
-fi
-if [ -n "$HTTPS_PROXY" ] || [ -n "$https_proxy" ]; then
-    export HTTPS_PROXY="${HTTPS_PROXY:-$https_proxy}"
-    export https_proxy="${https_proxy:-$HTTPS_PROXY}"
-fi
-if [ -n "$NO_PROXY" ] || [ -n "$no_proxy" ]; then
-    export NO_PROXY="${NO_PROXY:-$no_proxy}"
-    export no_proxy="${no_proxy:-$NO_PROXY}"
-fi
+# 函数：处理代理环境变量（在加载环境文件后调用）
+setup_proxy_vars() {
+    # 传递代理环境变量（如果存在，支持大小写）
+    if [ -n "$HTTP_PROXY" ] || [ -n "$http_proxy" ]; then
+        export HTTP_PROXY="${HTTP_PROXY:-$http_proxy}"
+        export http_proxy="${http_proxy:-$HTTP_PROXY}"
+        print_message "检测到 HTTP 代理: $HTTP_PROXY" "$YELLOW"
+    fi
+    if [ -n "$HTTPS_PROXY" ] || [ -n "$https_proxy" ]; then
+        export HTTPS_PROXY="${HTTPS_PROXY:-$https_proxy}"
+        export https_proxy="${https_proxy:-$HTTPS_PROXY}"
+        print_message "检测到 HTTPS 代理: $HTTPS_PROXY" "$YELLOW"
+    fi
+    if [ -n "$NO_PROXY" ] || [ -n "$no_proxy" ]; then
+        export NO_PROXY="${NO_PROXY:-$no_proxy}"
+        export no_proxy="${no_proxy:-$NO_PROXY}"
+    fi
+}
 
 # 检查 Docker 和 Docker Compose
 check_requirements() {
