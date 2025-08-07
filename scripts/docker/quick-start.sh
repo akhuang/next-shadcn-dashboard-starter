@@ -10,37 +10,51 @@ cd "$SCRIPT_DIR"
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[0;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}⚡ 快速启动 Docker 开发环境${NC}"
 echo ""
 
-# 1. 检查是否有现有镜像
-if docker images | grep -q "nextjs-dashboard-app"; then
-    echo -e "${GREEN}✓ 发现已有镜像，跳过构建${NC}"
-    SKIP_BUILD=true
-else
-    echo -e "${YELLOW}ℹ 首次运行，需要构建镜像${NC}"
-    SKIP_BUILD=false
+# 检查并创建必要文件
+if [ ! -f ".env" ]; then
+    echo -e "${YELLOW}创建 .env 文件...${NC}"
+    # 复制项目根目录的 .env 文件
+    if [ -f "../../.env" ]; then
+        cp ../../.env .env
+        echo -e "${GREEN}✓ 复制项目 .env 文件${NC}"
+    else
+        cat > .env << 'EOF'
+# Docker 环境配置
+NODE_ENV=development
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+NEXT_PUBLIC_APP_URL=https://localhost:8443
+DATABASE_URL=
+HTTP_PORT=8088
+HTTPS_PORT=8443
+EOF
+    fi
 fi
 
-# 2. 使用开发配置文件
+# 检查并生成SSL证书
+if [ ! -f "certs/portal.crt" ] || [ ! -f "certs/portal.key" ]; then
+    echo -e "${YELLOW}生成自签名SSL证书...${NC}"
+    ./generate-certs.sh
+fi
+
+# 使用配置文件
 if [ "$1" == "--prod" ]; then
     echo -e "${BLUE}使用生产环境配置...${NC}"
     COMPOSE_FILE="docker-compose.yml"
 else
-    echo -e "${BLUE}使用开发环境配置（更快）...${NC}"
+    echo -e "${BLUE}使用开发环境配置${NC}"
     COMPOSE_FILE="docker-compose.dev.yml"
 fi
 
-# 3. 启动服务
-if [ "$SKIP_BUILD" == true ]; then
-    # 直接启动，不重新构建
-    docker-compose -f $COMPOSE_FILE up -d
-else
-    # 首次构建，使用缓存
-    docker-compose -f $COMPOSE_FILE up -d --build
-fi
+# 启动服务
+echo -e "${BLUE}构建并启动服务...${NC}"
+docker-compose -f $COMPOSE_FILE up -d --build
 
 # 4. 等待服务就绪
 echo -e "${BLUE}等待服务启动...${NC}"
