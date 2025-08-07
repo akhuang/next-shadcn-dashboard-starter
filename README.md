@@ -220,3 +220,8 @@ docker-compose exec nginx nginx -t
 # 查看错误日志
 docker-compose exec nginx cat /var/log/nginx/error.log
 ```
+
+
+#### faq
+docker-compose -f scripts/docker/docker-compose.dev.yml restart app
+docker-compose -f scripts/docker/docker-compose.dev.yml restart nginx
