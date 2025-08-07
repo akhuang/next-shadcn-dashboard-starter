@@ -6,7 +6,8 @@ export const metadata = {
 };
 
 export default function MetabaseDashboardPage() {
-  const metabaseUrl = 'https://metabase.com/demo/dashboard/1';
+  // 使用 Nginx 代理路径
+  const metabaseUrl = '/proxy/metabase.com/demo/dashboard/1';
 
   return (
     <DashboardContainer fullWidth>

@@ -57,7 +57,12 @@ export function OrgSwitcher({
                 <OrderNetworkIcon className='size-4' />
               </div>
               <div className='flex flex-col gap-0.5 leading-none'>
-                <span className='font-semibold'>企业订单履行部</span>
+                <span
+                  className='text-base font-bold tracking-wide'
+                  style={{ fontFamily: '"Noto Sans SC", "Inter", sans-serif' }}
+                >
+                  企业订单履行部
+                </span>
                 {/* <span className='text-xs'>{selectedTenant.name}</span> */}
               </div>
               <ChevronsUpDown className='ml-auto hidden' />
