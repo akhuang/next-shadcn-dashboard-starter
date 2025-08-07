@@ -1,0 +1,32 @@
+{
+  "dashboards": [
+    {
+      "id": "grafana",
+      "title": "Grafana3",
+      "description": "Real-time monitoring and alerting metrics dashboard",
+      "proxyUrl": "/proxy/play.grafana.org/d/0000000742/alerting?orgId=1&kiosk",
+      "features": ["Real-time metrics", "Alerting", "Time series visualization"]
+    },
+    {
+      "id": "metabase",
+      "title": "Metabase",
+      "description": "Business intelligence and analytics dashboard",
+      "proxyUrl": "/proxy/metabase.com/demo/dashboard/1",
+      "features": ["Business analytics", "SQL queries", "Interactive charts"]
+    },
+    {
+      "id": "kibana",
+      "title": "Kibana",
+      "description": "Web traffic analysis and log visualization",
+      "proxyUrl": "/proxy/elastic.co/guide/en/kibana/current/dashboard.html",
+      "features": ["Log analysis", "Search capabilities", "Data exploration"]
+    },
+    {
+      "id": "tableau",
+      "title": "Tableau",
+      "description": "Advanced data visualization and analysis",
+      "proxyUrl": "/proxy/public.tableau.com/views/SuperSampleSuperstore/SuperSampleSuperstore",
+      "features": ["Data visualization", "Interactive dashboards", "Public sharing"]
+    }
+  ]
+}

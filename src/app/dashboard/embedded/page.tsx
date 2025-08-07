@@ -11,37 +11,11 @@ import {
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import dashboardConfig from '@/lib/dashboard-config.json';
 
 export const metadata = {
   title: 'Dashboard: Embedded Overview'
 };
-
-const dashboards = [
-  {
-    title: 'Grafana',
-    description: 'Real-time monitoring and alerting metrics dashboard',
-    href: '/dashboard/embedded/grafana',
-    features: ['Real-time metrics', 'Alerting', 'Time series visualization']
-  },
-  {
-    title: 'Metabase',
-    description: 'Business intelligence and analytics dashboard',
-    href: '/dashboard/embedded/metabase',
-    features: ['Business analytics', 'SQL queries', 'Interactive charts']
-  },
-  {
-    title: 'Kibana',
-    description: 'Web traffic analysis and log visualization',
-    href: '/dashboard/embedded/kibana',
-    features: ['Log analysis', 'Search capabilities', 'Data exploration']
-  },
-  {
-    title: 'Tableau',
-    description: 'Advanced data visualization and analysis',
-    href: '/dashboard/embedded/tableau',
-    features: ['Data visualization', 'Interactive dashboards', 'Public sharing']
-  }
-];
 
 export default function EmbeddedDashboardPage() {
   return (
@@ -56,8 +30,8 @@ export default function EmbeddedDashboardPage() {
         </div>
 
         <div className='grid gap-4 md:grid-cols-2'>
-          {dashboards.map((dashboard) => (
-            <Card key={dashboard.title}>
+          {dashboardConfig.dashboards.map((dashboard) => (
+            <Card key={dashboard.id}>
               <CardHeader>
                 <CardTitle>{dashboard.title}</CardTitle>
                 <CardDescription>{dashboard.description}</CardDescription>
@@ -69,7 +43,7 @@ export default function EmbeddedDashboardPage() {
                   ))}
                 </ul>
                 <Link
-                  href={dashboard.href}
+                  href={`/dashboard/embedded/${dashboard.id}`}
                   className={cn(
                     buttonVariants({ variant: 'default' }),
                     'w-full'

@@ -1,4 +1,5 @@
 import { NavItem } from '@/types';
+import dashboardConfig from '@/lib/dashboard-config.json';
 
 export type Product = {
   photo_url: string;
@@ -64,32 +65,15 @@ export const navItems: NavItem[] = [
     icon: 'dashboard',
     shortcut: ['e', 'e'],
     isActive: false,
-    items: [
-      {
-        title: 'Grafana',
-        url: '/dashboard/embedded/grafana',
-        icon: 'dashboard',
-        shortcut: ['g', 'g']
-      },
-      {
-        title: 'Metabase',
-        url: '/dashboard/embedded/metabase',
-        icon: 'dashboard',
-        shortcut: ['m', 'b']
-      },
-      {
-        title: 'Kibana',
-        url: '/dashboard/embedded/kibana',
-        icon: 'dashboard',
-        shortcut: ['k', 'b']
-      },
-      {
-        title: 'Tableau',
-        url: '/dashboard/embedded/tableau',
-        icon: 'dashboard',
-        shortcut: ['t', 'b']
-      }
-    ]
+    items: dashboardConfig.dashboards.map((dashboard, index) => ({
+      title: dashboard.title,
+      url: `/dashboard/embedded/${dashboard.id}`,
+      icon: 'dashboard',
+      shortcut: [
+        dashboard.id.charAt(0),
+        dashboard.id.charAt(1) || dashboard.id.charAt(0)
+      ]
+    }))
   },
   {
     title: '字体测试',
