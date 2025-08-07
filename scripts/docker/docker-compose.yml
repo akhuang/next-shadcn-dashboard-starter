@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     env_file:
-      - .env        # 生产环境配置
+      - .env.prod   # 生产环境配置
     environment:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
@@ -46,10 +46,10 @@ services:
       - app
     ports:
       - "${HTTP_PORT:-8088}:80"
-      - "${HTTPS_PORT:-8443}:443"  # HTTPS 端口
+      - "${HTTPS_PORT:-8444}:443"  # HTTPS 端口
     environment:
       - TZ=Asia/Shanghai
-      - HTTPS_PORT=${HTTPS_PORT:-8443}
+      - HTTPS_PORT=${HTTPS_PORT:-8444}
     volumes:
       # Nginx 配置模板
       - ./nginx/portal.conf.template:/etc/nginx/templates/default.conf.template:ro

@@ -25,7 +25,7 @@
       "id": "tableau",
       "title": "Tableau",
       "description": "Advanced data visualization and analysis",
-      "proxyUrl": "/proxy/public.tableau.com/views/SuperSampleSuperstore/SuperSampleSuperstore",
+      "proxyUrl": "/proxy/public.tableau.com/views/RegionalSampleWorkbook/Storms",
       "features": ["Data visualization", "Interactive dashboards", "Public sharing"]
     }
   ]
