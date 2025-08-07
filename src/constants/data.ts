@@ -23,6 +23,22 @@ export const navItems: NavItem[] = [
     items: [] // Empty array as there are no child items for Dashboard
   },
   {
+    title: '可视化看板',
+    url: '#',
+    icon: 'dashboard',
+    shortcut: ['e', 'e'],
+    isActive: false,
+    items: dashboardConfig.dashboards.map((dashboard, index) => ({
+      title: dashboard.title,
+      url: `/dashboard/embedded/${dashboard.id}`,
+      icon: 'dashboard',
+      shortcut: [
+        dashboard.id.charAt(0),
+        dashboard.id.charAt(1) || dashboard.id.charAt(0)
+      ]
+    }))
+  },
+  {
     title: 'Product',
     url: '/dashboard/product',
     icon: 'product',
@@ -58,22 +74,6 @@ export const navItems: NavItem[] = [
     shortcut: ['k', 'k'],
     isActive: false,
     items: [] // No child items
-  },
-  {
-    title: 'Embedded',
-    url: '#',
-    icon: 'dashboard',
-    shortcut: ['e', 'e'],
-    isActive: false,
-    items: dashboardConfig.dashboards.map((dashboard, index) => ({
-      title: dashboard.title,
-      url: `/dashboard/embedded/${dashboard.id}`,
-      icon: 'dashboard',
-      shortcut: [
-        dashboard.id.charAt(0),
-        dashboard.id.charAt(1) || dashboard.id.charAt(0)
-      ]
-    }))
   },
   {
     title: '字体测试',
