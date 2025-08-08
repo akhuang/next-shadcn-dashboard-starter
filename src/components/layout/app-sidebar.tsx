@@ -32,6 +32,7 @@ import {
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/constants/data';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { cn } from '@/lib/utils';
 // import { useUser } from '@clerk/nextjs';
 import {
   IconBell,
@@ -184,17 +185,10 @@ export default function AppSidebar() {
                             <DropdownMenuItem
                               key={subItem.title}
                               asChild
-                              className={isSubItemActive ? '' : ''}
-                              style={
-                                isSubItemActive
-                                  ? {
-                                      backgroundColor: 'rgb(59 130 246 / 0.25)',
-                                      color: 'rgb(29 78 216)',
-                                      fontWeight: '600',
-                                      borderLeft: '3px solid rgb(59 130 246)'
-                                    }
-                                  : {}
-                              }
+                              className={cn(
+                                'cursor-pointer',
+                                isSubItemActive && 'dropdown-menu-item-active'
+                              )}
                             >
                               <Link
                                 href={subItem.url}

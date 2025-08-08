@@ -158,6 +158,18 @@
     background-color: oklch(from var(--primary) l c h / 0.2) !important;
     color: var(--primary) !important;
   }
+
+  /* 下拉菜单选中状态样式 - 收缩状态下的二级菜单 */
+  .dropdown-menu-item-active {
+    background-color: oklch(from var(--primary) l c h / 0.15) !important;
+    color: var(--primary) !important;
+    font-weight: 600 !important;
+  }
+
+  .dark .dropdown-menu-item-active {
+    background-color: oklch(from var(--primary) l c h / 0.25) !important;
+    color: var(--primary) !important;
+  }
 }
 
 /* 覆盖 Tailwind 字体定义 */
