@@ -54,6 +54,58 @@ export const company = {
   plan: 'Enterprise'
 };
 
+// Component for collapsible menu items with proper active state management
+function CollapsibleMenuItem({
+  item,
+  hasActiveSubItem,
+  pathname
+}: {
+  item: any;
+  hasActiveSubItem: boolean;
+  pathname: string;
+}) {
+  const [isOpen, setIsOpen] = React.useState(item.isActive || hasActiveSubItem);
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+
+  return (
+    <Collapsible
+      asChild
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className='group/collapsible'
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            tooltip={item.title}
+            isActive={!isOpen && hasActiveSubItem}
+          >
+            {item.icon && <Icon />}
+            <span>{item.title}</span>
+            <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.items?.map((subItem: any) => (
+              <SidebarMenuSubItem key={subItem.title}>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={pathname === subItem.url}
+                >
+                  <Link href={subItem.url}>
+                    <span>{subItem.title}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
 const tenants = [
   { id: '1', name: 'Acme Inc' },
   // { id: '2', name: 'Beta Corp' },
@@ -98,11 +150,12 @@ export default function AppSidebar() {
           <SidebarMenu>
             {navItems.map((item) => {
               const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-              // 检查主项目或任何子项目是否与当前路径匹配
-              const isItemOrSubItemActive =
-                pathname === item.url ||
-                (item.items &&
-                  item.items.some((subItem) => pathname === subItem.url));
+              // 检查主项目是否与当前路径匹配（仅用于没有子项的菜单项）
+              const isItemActive = pathname === item.url;
+              // 检查是否有任何子项目与当前路径匹配
+              const hasActiveSubItem =
+                item.items &&
+                item.items.some((subItem) => pathname === subItem.url);
 
               return item?.items && item?.items?.length > 0 ? (
                 state === 'collapsed' ? (
@@ -112,7 +165,7 @@ export default function AppSidebar() {
                       <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                           tooltip={item.title}
-                          isActive={isItemOrSubItemActive}
+                          isActive={isItemActive || hasActiveSubItem}
                         >
                           {item.icon && <Icon />}
                           <span>{item.title}</span>
@@ -157,48 +210,19 @@ export default function AppSidebar() {
                   </SidebarMenuItem>
                 ) : (
                   // 展开状态：使用折叠菜单显示子项
-                  <Collapsible
+                  <CollapsibleMenuItem
                     key={item.title}
-                    asChild
-                    defaultOpen={item.isActive}
-                    className='group/collapsible'
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={item.title}
-                          isActive={isItemOrSubItemActive}
-                        >
-                          {item.icon && <Icon />}
-                          <span>{item.title}</span>
-                          <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={pathname === subItem.url}
-                              >
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
+                    item={item}
+                    hasActiveSubItem={hasActiveSubItem}
+                    pathname={pathname}
+                  />
                 )
               ) : (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     tooltip={item.title}
-                    isActive={pathname === item.url}
+                    isActive={isItemActive}
                   >
                     <Link href={item.url} className='cursor-pointer'>
                       <Icon />

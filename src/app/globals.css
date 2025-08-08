@@ -135,30 +135,28 @@
     cursor: pointer !important;
   }
 
-  /* 侧边栏选中状态样式 - 更深的颜色 */
+  /* 侧边栏选中状态样式 - 使用主题主色 */
   [data-sidebar='menu-button'][data-active='true'] {
-    background-color: rgb(59 130 246 / 0.25) !important;
-    color: rgb(29 78 216) !important;
+    background-color: oklch(from var(--primary) l c h / 0.15) !important;
+    color: var(--primary) !important;
     font-weight: 600 !important;
   }
 
   .dark [data-sidebar='menu-button'][data-active='true'] {
-    background-color: rgb(59 130 246 / 0.35) !important;
-    color: rgb(147 197 253) !important;
+    background-color: oklch(from var(--primary) l c h / 0.25) !important;
+    color: var(--primary) !important;
   }
 
-  /* 子菜单选中状态样式 - 更深的颜色 */
+  /* 子菜单选中状态样式 - 使用主题主色 */
   [data-sidebar='menu-sub-button'][data-active='true'] {
-    background-color: rgb(59 130 246 / 0.2) !important;
-    color: rgb(29 78 216) !important;
+    background-color: oklch(from var(--primary) l c h / 0.12) !important;
+    color: var(--primary) !important;
     font-weight: 600 !important;
-    border-left: 3px solid rgb(59 130 246) !important;
   }
 
   .dark [data-sidebar='menu-sub-button'][data-active='true'] {
-    background-color: rgb(59 130 246 / 0.3) !important;
-    color: rgb(147 197 253) !important;
-    border-left-color: rgb(96 165 250) !important;
+    background-color: oklch(from var(--primary) l c h / 0.2) !important;
+    color: var(--primary) !important;
   }
 }
 
