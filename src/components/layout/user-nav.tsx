@@ -10,19 +10,34 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
-// import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-export function UserNav() {
-  // const { user } = useUser();
-  const router = useRouter();
+import { useEffect, useState } from 'react';
+import { UserSession } from '@/lib/auth/verify';
 
-  // Mock user data for development without auth
-  const user = {
-    id: 'dev-user',
-    fullName: 'Dev User',
-    emailAddresses: [{ emailAddress: 'dev@example.com' }],
-    imageUrl: undefined
-  };
+export function UserNav() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserSession | null>(null);
+
+  useEffect(() => {
+    // Get user session from API
+    fetch('/api/auth/session')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {
+        // If no session, use mock data in dev
+        if (process.env.NODE_ENV === 'development') {
+          setUser({
+            username: 'dev-user',
+            displayName: 'Dev User',
+            email: 'dev@example.com'
+          });
+        }
+      });
+  }, []);
 
   if (user) {
     return (
@@ -41,11 +56,16 @@ export function UserNav() {
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col space-y-1'>
               <p className='text-sm leading-none font-medium'>
-                {user.fullName}
+                {user.displayName}
               </p>
               <p className='text-muted-foreground text-xs leading-none'>
-                {user.emailAddresses[0].emailAddress}
+                {user.email}
               </p>
+              {user.department && (
+                <p className='text-muted-foreground text-xs leading-none'>
+                  {user.department}
+                </p>
+              )}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -58,8 +78,13 @@ export function UserNav() {
             <DropdownMenuItem>New Team</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push('/')}>
-            Sign Out (Mock)
+          <DropdownMenuItem
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              router.push('/sign-in');
+            }}
+          >
+            退出登录
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

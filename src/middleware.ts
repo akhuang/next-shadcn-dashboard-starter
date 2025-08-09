@@ -1,15 +1,33 @@
-// import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-// import { NextRequest } from 'next/server';
+// Clerk authentication is disabled - using local AD authentication instead
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { verifyAuth } from '@/lib/auth/verify';
 
-// const isProtectedRoute = createRouteMatcher(['/dashboard(.*)']);
+const protectedRoutes = ['/dashboard'];
 
-// export default clerkMiddleware(async (auth, req: NextRequest) => {
-//   if (isProtectedRoute(req)) await auth.protect();
-// });
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
 
-// Temporarily disabled authentication - remove this to re-enable
-export default function middleware() {
-  // No authentication checks
+  // Check if the route is protected
+  const isProtected = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (isProtected) {
+    const token = request.cookies.get('auth-token')?.value;
+
+    if (!token) {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+
+    try {
+      await verifyAuth(token);
+    } catch {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
