@@ -24,7 +24,6 @@ import {
   Server,
   Activity,
   Layers,
-  Terminal,
   Bug,
   Search,
   Bell,
@@ -43,6 +42,18 @@ export interface NavigationLink {
   url: string;
   icon?: LucideIcon;
   isExternal?: boolean;
+  // 新增优化属性
+  size?: 'large' | 'medium' | 'small';
+  priority?: 'critical' | 'frequent' | 'normal';
+  category?:
+    | 'supply-chain'
+    | 'development'
+    | 'operations'
+    | 'collaboration'
+    | 'analytics'
+    | 'support';
+  healthStatus?: 'online' | 'offline' | 'slow';
+  usage?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface NavigationCategory {
@@ -55,12 +66,56 @@ export interface NavigationCategory {
 
 export const frequentlyUsedLinks: NavigationLink[] = [
   {
+    id: 'erp-system',
+    title: 'ERP 系统',
+    description: '企业资源规划核心系统',
+    url: 'https://erp.company.com',
+    icon: Database,
+    isExternal: true,
+    size: 'large',
+    priority: 'critical',
+    category: 'supply-chain',
+    healthStatus: 'online',
+    usage: 'daily'
+  },
+  {
+    id: 'wms-system',
+    title: 'WMS 仓储',
+    description: '仓库管理系统',
+    url: 'https://wms.company.com',
+    icon: Package,
+    isExternal: true,
+    size: 'large',
+    priority: 'critical',
+    category: 'supply-chain',
+    healthStatus: 'online',
+    usage: 'daily'
+  },
+  {
+    id: 'order-system',
+    title: '订单管理',
+    description: '订单履行和跟踪系统',
+    url: 'https://orders.company.com',
+    icon: Clipboard,
+    isExternal: true,
+    size: 'large',
+    priority: 'critical',
+    category: 'supply-chain',
+    healthStatus: 'online',
+    usage: 'daily'
+  },
+  {
     id: 'gitlab',
     title: 'GitLab',
     description: '代码仓库管理平台',
     url: 'https://gitlab.company.com',
     icon: GitBranch,
-    isExternal: true
+    isExternal: true,
+    size: 'medium',
+    priority: 'frequent',
+    category: 'development',
+    healthStatus: 'online',
+    usage: 'daily'
   },
   {
     id: 'jenkins',
@@ -68,7 +123,12 @@ export const frequentlyUsedLinks: NavigationLink[] = [
     description: 'CI/CD 自动化构建',
     url: 'https://jenkins.company.com',
     icon: Gauge,
-    isExternal: true
+    isExternal: true,
+    size: 'medium',
+    priority: 'frequent',
+    category: 'operations',
+    healthStatus: 'online',
+    usage: 'daily'
   },
   {
     id: 'confluence',
@@ -76,7 +136,12 @@ export const frequentlyUsedLinks: NavigationLink[] = [
     description: '团队协作文档平台',
     url: 'https://confluence.company.com',
     icon: FileText,
-    isExternal: true
+    isExternal: true,
+    size: 'medium',
+    priority: 'frequent',
+    category: 'collaboration',
+    healthStatus: 'online',
+    usage: 'weekly'
   },
   {
     id: 'jira',
@@ -84,7 +149,12 @@ export const frequentlyUsedLinks: NavigationLink[] = [
     description: '项目管理和问题跟踪',
     url: 'https://jira.company.com',
     icon: Users,
-    isExternal: true
+    isExternal: true,
+    size: 'medium',
+    priority: 'frequent',
+    category: 'collaboration',
+    healthStatus: 'online',
+    usage: 'daily'
   },
   {
     id: 'email',
@@ -92,15 +162,25 @@ export const frequentlyUsedLinks: NavigationLink[] = [
     description: '公司内部邮件系统',
     url: 'https://mail.company.com',
     icon: Mail,
-    isExternal: true
+    isExternal: true,
+    size: 'small',
+    priority: 'frequent',
+    category: 'collaboration',
+    healthStatus: 'online',
+    usage: 'daily'
   },
   {
-    id: 'grafana-quick',
-    title: 'Grafana',
-    description: '系统监控面板',
-    url: 'https://grafana.company.com',
+    id: 'supply-analytics',
+    title: '供应链分析',
+    description: '供应链数据分析看板',
+    url: 'https://analytics.company.com',
     icon: BarChart3,
-    isExternal: true
+    isExternal: true,
+    size: 'medium',
+    priority: 'frequent',
+    category: 'analytics',
+    healthStatus: 'online',
+    usage: 'daily'
   },
   {
     id: 'calendar',
@@ -108,79 +188,68 @@ export const frequentlyUsedLinks: NavigationLink[] = [
     description: '会议和日程管理',
     url: 'https://calendar.company.com',
     icon: Calendar,
-    isExternal: true
-  },
-  {
-    id: 'vpn',
-    title: 'VPN 管理',
-    description: '远程访问网络',
-    url: 'https://vpn.company.com',
-    icon: Shield,
-    isExternal: true
+    isExternal: true,
+    size: 'small',
+    priority: 'normal',
+    category: 'collaboration',
+    healthStatus: 'online',
+    usage: 'daily'
   }
 ];
 
 export const navigationCategories: NavigationCategory[] = [
   {
-    id: 'development',
-    title: '开发工具',
-    description: '代码开发和版本控制相关工具',
-    icon: Code,
+    id: 'supply-chain-core',
+    title: '供应链核心',
+    description: 'ERP、仓储、订单等核心业务系统',
+    icon: Package,
     links: [
       {
-        id: 'gitlab-main',
-        title: 'GitLab',
-        description: '企业级代码仓库管理平台',
-        url: 'https://gitlab.company.com',
-        icon: GitBranch,
+        id: 'erp-main',
+        title: 'ERP 系统',
+        description: '企业资源规划系统',
+        url: 'https://erp.company.com',
+        icon: Database,
         isExternal: true
       },
       {
-        id: 'sonar',
-        title: 'SonarQube',
-        description: '代码质量检测平台',
-        url: 'https://sonar.company.com',
-        icon: Shield,
-        isExternal: true
-      },
-      {
-        id: 'nexus',
-        title: 'Nexus',
-        description: 'Maven 私有仓库',
-        url: 'https://nexus.company.com',
+        id: 'wms-main',
+        title: 'WMS 仓储系统',
+        description: '仓库管理系统',
+        url: 'https://wms.company.com',
         icon: Package,
         isExternal: true
       },
       {
-        id: 'harbor',
-        title: 'Harbor',
-        description: 'Docker 镜像仓库',
-        url: 'https://harbor.company.com',
-        icon: Package,
+        id: 'oms',
+        title: '订单管理系统',
+        description: '订单履行和跟踪',
+        url: 'https://oms.company.com',
+        icon: Clipboard,
         isExternal: true
       },
       {
-        id: 'code-review',
-        title: 'CodeReview',
-        description: '代码审查工具',
-        url: 'https://review.company.com',
-        icon: Search,
+        id: 'tms',
+        title: '运输管理系统',
+        description: '物流运输管理',
+        url: 'https://tms.company.com',
+        icon: Workflow,
         isExternal: true
       },
       {
-        id: 'artifactory',
-        title: 'Artifactory',
-        description: '制品管理仓库',
-        url: 'https://artifactory.company.com',
+        id: 'pim',
+        title: '商品信息管理',
+        description: '商品主数据管理',
+        url: 'https://pim.company.com',
         icon: Archive,
         isExternal: true
       },
       {
-        id: 'postman',
-        title: 'Postman',
-        description: 'API 接口测试',
-        url: 'https://postman.company.com',
-        icon: Zap,
+        id: 'inventory',
+        title: '库存管理',
+        description: '库存监控和预警',
+        url: 'https://inventory.company.com',
+        icon: BarChart3,
         isExternal: true
       }
     ]

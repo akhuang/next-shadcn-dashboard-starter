@@ -8,7 +8,7 @@ import {
   frequentlyUsedLinks,
   navigationCategories,
   NavigationLink
-} from '@/constants/navigation-links';
+} from '@/constants/supply-chain-navigation';
 import {
   ExternalLink,
   Star,
@@ -28,6 +28,7 @@ export default function NavigationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const {
     recentVisits,
+    favoriteLinks,
     addRecentVisit,
     toggleFavorite,
     isFavorite,
@@ -37,6 +38,15 @@ export default function NavigationPage() {
   const handleLinkClick = (link: NavigationLink) => {
     addRecentVisit(link);
   };
+
+  // 获取收藏的链接
+  const getFavoriteLinksData = useMemo(() => {
+    const allLinks = [
+      ...frequentlyUsedLinks,
+      ...navigationCategories.flatMap((category) => category.links)
+    ];
+    return allLinks.filter((link) => favoriteLinks.includes(link.id));
+  }, [favoriteLinks]);
 
   // 过滤链接基于搜索查询
   const filteredFrequentlyUsed = useMemo(() => {
@@ -82,7 +92,7 @@ export default function NavigationPage() {
           rel={link.isExternal ? 'noopener noreferrer' : undefined}
           onClick={() => handleLinkClick(link)}
         >
-          <div className='group bg-card text-card-foreground relative h-full cursor-pointer rounded-lg border shadow-sm transition-all hover:scale-[1.01] hover:shadow-md'>
+          <div className='bg-card text-card-foreground hover:shadow-primary/10 group-hover:border-primary/20 relative h-full cursor-pointer rounded-lg border shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg'>
             <div
               className={cn(
                 'p-2',
@@ -117,6 +127,9 @@ export default function NavigationPage() {
                 </div>
               </div>
             </div>
+
+            {/* 悬停显示的动效 */}
+            <div className='from-primary/5 pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-r to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
           </div>
         </Link>
         <Button
@@ -144,7 +157,7 @@ export default function NavigationPage() {
 
   return (
     <div className='flex flex-1 flex-col'>
-      <main className='flex-1 overflow-hidden p-4 md:p-6 lg:p-8'>
+      <main className='flex-1 overflow-auto p-4 md:p-6 lg:p-8'>
         <div className='mx-auto max-w-7xl space-y-6'>
           {/* 页面标题 */}
           <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
@@ -182,12 +195,90 @@ export default function NavigationPage() {
             </div>
           </div>
 
-          {/* 常用链接 */}
+          {/* 最近访问 */}
+          {!searchQuery && (
+            <div>
+              <div className='mb-4 flex items-center justify-between'>
+                <div className='flex items-center gap-2'>
+                  <Clock className='h-5 w-5 text-blue-500' />
+                  <h2 className='text-lg font-semibold'>最近访问</h2>
+                </div>
+                {recentVisits.length > 0 && (
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={clearRecentVisits}
+                    className='flex items-center gap-1'
+                  >
+                    <Trash2 className='h-3 w-3' />
+                    清空
+                  </Button>
+                )}
+              </div>
+              {recentVisits.length > 0 ? (
+                <div
+                  className={cn(
+                    'grid gap-2',
+                    viewMode === 'grid'
+                      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
+                      : 'grid-cols-1'
+                  )}
+                >
+                  {recentVisits.map((visit) => (
+                    <LinkCard key={visit.id} link={visit} viewMode={viewMode} />
+                  ))}
+                </div>
+              ) : (
+                <div className='text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed'>
+                  <p className='text-sm'>
+                    暂无最近访问记录，点击下方系统链接开始使用
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 我的收藏 */}
+          {!searchQuery && (
+            <div>
+              <div className='mb-4 flex items-center gap-2'>
+                <Star className='h-5 w-5 fill-yellow-500 text-yellow-500' />
+                <h2 className='text-lg font-semibold'>我的收藏</h2>
+                {getFavoriteLinksData.length > 0 && (
+                  <Badge variant='secondary'>
+                    {getFavoriteLinksData.length} 个
+                  </Badge>
+                )}
+              </div>
+              {getFavoriteLinksData.length > 0 ? (
+                <div
+                  className={cn(
+                    'grid gap-2',
+                    viewMode === 'grid'
+                      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
+                      : 'grid-cols-1'
+                  )}
+                >
+                  {getFavoriteLinksData.map((link) => (
+                    <LinkCard key={link.id} link={link} viewMode={viewMode} />
+                  ))}
+                </div>
+              ) : (
+                <div className='text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed'>
+                  <p className='text-sm'>
+                    暂无收藏系统，点击系统卡片右上角的⭐来收藏
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 核心系统 */}
           {(!searchQuery || filteredFrequentlyUsed.length > 0) && (
             <div>
               <div className='mb-4 flex items-center gap-2'>
                 <Star className='h-5 w-5 text-yellow-500' />
-                <h2 className='text-lg font-semibold'>常用链接</h2>
+                <h2 className='text-lg font-semibold'>核心系统</h2>
                 {searchQuery && (
                   <Badge variant='secondary'>
                     {filteredFrequentlyUsed.length} 个结果
@@ -304,7 +395,7 @@ export default function NavigationPage() {
                       </span>
                     )}
                   </div>
-                  <div className='max-h-[500px] overflow-y-auto'>
+                  <div>
                     <div
                       className={cn(
                         'grid gap-2',
@@ -325,47 +416,6 @@ export default function NavigationPage() {
                 </TabsContent>
               ))}
             </Tabs>
-          )}
-
-          {/* 最近访问 */}
-          {!searchQuery && (
-            <div>
-              <div className='mb-4 flex items-center justify-between'>
-                <div className='flex items-center gap-2'>
-                  <Clock className='h-5 w-5' />
-                  <h2 className='text-lg font-semibold'>最近访问</h2>
-                </div>
-                {recentVisits.length > 0 && (
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    onClick={clearRecentVisits}
-                    className='flex items-center gap-1'
-                  >
-                    <Trash2 className='h-3 w-3' />
-                    清空
-                  </Button>
-                )}
-              </div>
-              {recentVisits.length > 0 ? (
-                <div
-                  className={cn(
-                    'grid gap-2',
-                    viewMode === 'grid'
-                      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
-                      : 'grid-cols-1'
-                  )}
-                >
-                  {recentVisits.map((visit) => (
-                    <LinkCard key={visit.id} link={visit} viewMode={viewMode} />
-                  ))}
-                </div>
-              ) : (
-                <div className='text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed'>
-                  <p className='text-sm'>暂无最近访问记录</p>
-                </div>
-              )}
-            </div>
           )}
         </div>
       </main>

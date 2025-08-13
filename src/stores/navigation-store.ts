@@ -12,6 +12,7 @@ interface NavigationStore {
   addRecentVisit: (link: NavigationLink) => void;
   toggleFavorite: (linkId: string) => void;
   isFavorite: (linkId: string) => boolean;
+  getFavoriteLinks: () => NavigationLink[];
   clearRecentVisits: () => void;
 }
 
@@ -60,6 +61,13 @@ export const useNavigationStore = create<NavigationStore>()(
 
       isFavorite: (linkId: string) => {
         return get().favoriteLinks.includes(linkId);
+      },
+
+      getFavoriteLinks: () => {
+        const { favoriteLinks } = get();
+        // 需要从所有链接中找到收藏的链接
+        // 这个方法需要在组件中实现，因为这里无法直接访问 navigationCategories
+        return [];
       },
 
       clearRecentVisits: () => {
