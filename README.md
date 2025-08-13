@@ -10,7 +10,7 @@
 # 开发环境（端口: 8089/8445）
 ./scripts/deploy-env.sh dev -b -u
 
-# 生产环境（端口: 8088/8444） 
+# 生产环境（端口: 8088/8444）
 ./scripts/deploy-env.sh prod -b -u
 
 # 查看所有环境状态
@@ -18,12 +18,14 @@
 ```
 
 ### 访问地址
+
 - **开发环境**: http://localhost:8089 | https://localhost:8445
 - **生产环境**: http://localhost:8088 | https://localhost:8444
 
 ## 📋 常用操作
 
 ### 环境管理
+
 ```bash
 # 开发环境操作
 ./scripts/deploy-env.sh dev -s      # 查看状态
@@ -31,7 +33,7 @@
 ./scripts/deploy-env.sh dev -r      # 重启
 ./scripts/deploy-env.sh dev -d      # 停止
 
-# 生产环境操作  
+# 生产环境操作
 ./scripts/deploy-env.sh prod -s     # 查看状态
 ./scripts/deploy-env.sh prod -l     # 查看日志
 ./scripts/deploy-env.sh prod -r     # 重启
@@ -50,13 +52,17 @@
 Docker 使用两种类型的卷来存储数据：
 
 #### 1. 绑定挂载（项目文件）
+
 这些直接挂载到本地目录，删除容器不会影响文件：
+
 - `../../uploads:/app/uploads` - 上传文件存储在本地
 - `../..:/app` - 源代码挂载（开发环境）
 - `./certs:/etc/nginx/certs:ro` - SSL 证书文件
 
 #### 2. 命名卷（Docker 管理）
+
 这些由 Docker 管理，存储在 Docker 数据目录中：
+
 - `nginx-logs` - Nginx 日志
 - `nginx-cache` - Nginx 缓存
 
@@ -75,12 +81,13 @@ docker volume prune
 ```
 
 **注意事项：**
+
 - 清理卷前请确认不包含重要数据
 - 命名卷删除后数据无法恢复
 - 绑定挂载的文件存储在本地，相对安全
 - 建议定期备份重要的卷数据
 
-```
+````
 
 ## iframe 嵌入外部站点
 
@@ -90,7 +97,7 @@ docker volume prune
 
 ```tsx
 <iframe src="https://example.com" />
-```
+````
 
 ### 嵌入 HTTP 站点
 
@@ -100,10 +107,10 @@ docker volume prune
 import { SecureIframe } from '@/components/secure-iframe';
 
 // 自动通过代理转换 HTTP 为 HTTPS
-<SecureIframe 
-  src="http://192.168.1.100:8080/dashboard"
-  className="w-full h-full"
-/>
+<SecureIframe
+  src='http://192.168.1.100:8080/dashboard'
+  className='h-full w-full'
+/>;
 ```
 
 或手动使用代理路径：
@@ -111,7 +118,7 @@ import { SecureIframe } from '@/components/secure-iframe';
 ```tsx
 // 原始: http://192.168.1.100:8080/app
 // 代理: /http-proxy/192.168.1.100:8080/app
-<iframe src="/http-proxy/192.168.1.100:8080/app" />
+<iframe src='/http-proxy/192.168.1.100:8080/app' />
 ```
 
 ## 🛠️ 开发方式
@@ -142,6 +149,7 @@ pnpm run dev
 ### 环境变量配置
 
 环境变量完全隔离：
+
 - **开发环境**: `scripts/docker/.env.dev`
 - **生产环境**: `scripts/docker/.env.prod`
 
@@ -161,6 +169,7 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 代码修改后让更改生效：
 
 #### 方法 1：完整重建（最可靠）
+
 ```bash
 # 重新构建镜像并启动
 ./deploy.sh -b -u
@@ -169,14 +178,17 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 ### 端口配置
 
 默认端口分配：
+
 - **开发环境**: HTTP=8089, HTTPS=8445
 - **生产环境**: HTTP=8088, HTTPS=8444
 
 如需修改端口，编辑对应的环境变量文件：
+
 - 开发环境: `scripts/docker/.env.dev`
 - 生产环境: `scripts/docker/.env.prod`
 
 修改后重启相应环境：
+
 ```bash
 ./scripts/deploy-env.sh dev -d && ./scripts/deploy-env.sh dev -u
 ./scripts/deploy-env.sh prod -d && ./scripts/deploy-env.sh prod -u
@@ -185,6 +197,7 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 ## 🔧 故障排查
 
 ### 查看日志
+
 ```bash
 # 查看特定环境的日志
 ./scripts/deploy-env.sh dev -l
@@ -196,15 +209,17 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 ```
 
 ### 端口冲突
+
 ```bash
 # 检查端口占用
 lsof -i :8089  # 开发环境 HTTP
 lsof -i :8445  # 开发环境 HTTPS
-lsof -i :8088  # 生产环境 HTTP  
+lsof -i :8088  # 生产环境 HTTP
 lsof -i :8444  # 生产环境 HTTPS
 ```
 
 ### SSL 证书
+
 首次部署时会自动生成自签名证书。如需重新生成：
 
 ```bash

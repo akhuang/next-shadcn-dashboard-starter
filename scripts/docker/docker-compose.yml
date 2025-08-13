@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     env_file:
-      - .env.prod   # 生产环境配置
+      - .env.prod # 生产环境配置
     environment:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
@@ -29,9 +29,15 @@ services:
       # 持久化上传文件等
       - ../../uploads:/app/uploads
     expose:
-      - "3000"
+      - '3000'
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -45,8 +51,8 @@ services:
     depends_on:
       - app
     ports:
-      - "${HTTP_PORT:-8088}:80"
-      - "${HTTPS_PORT:-8444}:443"  # HTTPS 端口
+      - '${HTTP_PORT:-8088}:80'
+      - '${HTTPS_PORT:-8444}:443' # HTTPS 端口
     environment:
       - TZ=Asia/Shanghai
       - HTTPS_PORT=${HTTPS_PORT:-8444}
@@ -62,7 +68,7 @@ services:
     networks:
       - dashboard-network
     healthcheck:
-      test: ["CMD", "nginx", "-t"]
+      test: ['CMD', 'nginx', '-t']
       interval: 30s
       timeout: 10s
       retries: 3

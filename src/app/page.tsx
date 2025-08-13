@@ -10,6 +10,6 @@ export default async function Page() {
   //   redirect('/dashboard/overview');
   // }
 
-  // Auth disabled - always redirect to dashboard
-  redirect('/dashboard/overview');
+  // Auth disabled - redirect to navigation page
+  redirect('/dashboard/navigation');
 }

@@ -5,6 +5,7 @@
 ## 架构概述
 
 部署架构使用以下组件：
+
 - **Next.js 应用**: 运行在 Node.js 容器中
 - **Nginx**: 作为反向代理，处理静态文件缓存和负载均衡
 - **Docker Compose**: 编排多个容器
@@ -14,6 +15,7 @@
 ```
 
 ### 文件结构
+
 ```
 scripts/
 ├── deploy.sh              # 部署脚本
@@ -53,7 +55,7 @@ vim .env.production
 
 ```typescript
 const baseConfig: NextConfig = {
-  output: 'standalone',  // 添加这一行
+  output: 'standalone' // 添加这一行
   // ... 其他配置
 };
 ```
@@ -140,12 +142,14 @@ docker-compose down
 ### 1. 准备 SSL 证书
 
 使用自签名证书（开发/测试环境）：
+
 ```bash
 cd scripts/docker
 ./generate-certs.sh localhost 3650
 ```
 
 或者使用正式 SSL 证书（生产环境）：
+
 ```bash
 # 将证书文件放在 scripts/docker/certs/ 目录
 cp /path/to/your/cert.crt scripts/docker/certs/portal.crt
@@ -163,11 +167,11 @@ server {
 
     ssl_certificate /etc/nginx/certs/server.crt;
     ssl_certificate_key /etc/nginx/certs/server.key;
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
-    
+
     # 其他配置同 nginx.conf
 }
 
@@ -205,6 +209,7 @@ services:
 ### 2. 健康检查
 
 应用已配置健康检查，可通过以下端点监控：
+
 - Next.js App: `http://localhost:3000/api/health`
 - Nginx: `http://localhost/health`
 
@@ -258,6 +263,7 @@ git pull origin main
 ### 常见问题
 
 1. **容器无法启动**
+
    ```bash
    # 查看详细错误日志
    docker-compose logs app
@@ -265,6 +271,7 @@ git pull origin main
    ```
 
 2. **端口冲突**
+
    ```bash
    # 检查端口占用
    sudo lsof -i :80
@@ -272,6 +279,7 @@ git pull origin main
    ```
 
 3. **构建失败**
+
    ```bash
    # 清理缓存重新构建
    docker-compose build --no-cache
@@ -286,6 +294,7 @@ git pull origin main
 ### 调试模式
 
 在 `docker-compose.yml` 中添加环境变量启用调试：
+
 ```yaml
 environment:
   - DEBUG=true
@@ -295,14 +304,17 @@ environment:
 ## 安全建议
 
 1. **定期更新**
+
    - 定期更新基础镜像
    - 及时修复安全漏洞
 
 2. **限制网络访问**
+
    - 使用防火墙限制端口访问
    - 配置 Nginx 访问控制
 
 3. **敏感信息管理**
+
    - 使用 Docker Secrets 管理敏感配置
    - 避免在镜像中硬编码密钥
 

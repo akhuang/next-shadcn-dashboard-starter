@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 项目概述
 
 这是一个基于 Next.js 15 + React 19 的管理仪表板模板，使用了以下技术栈：
+
 - **框架**: Next.js 15 App Router
 - **语言**: TypeScript
 - **样式**: Tailwind CSS v4 + shadcn/ui
@@ -65,35 +66,42 @@ pnpm run format:check
 ## 重要开发约定
 
 ### 路径别名
+
 - `@/*` 对应 `./src/*`
 - `~/*` 对应 `./public/*`
 
 ### 组件开发
+
 - 使用 shadcn/ui 组件库，配置文件在 `components.json`
 - 样式使用 Tailwind CSS，遵循项目中的格式化配置
 - 新组件应参考现有组件的编写模式
 
 ### 表单处理
+
 - 使用 React Hook Form + Zod 进行表单验证
 - 表单 Schema 放在 `features/[feature]/schemas/` 目录
 - 参考 `src/features/products/components/product-form.tsx` 的实现模式
 
 ### 数据表格
+
 - 使用 Tanstack Table + shadcn/ui 的 DataTable 组件
 - 支持服务端搜索、过滤和分页（通过 Nuqs 管理 URL 参数）
 - 参考 `src/features/products/components/product-tables/` 的实现
 
 ### 状态管理
+
 - 使用 Zustand 进行客户端状态管理
 - Store 文件放在 `src/stores/` 或功能特定的 `utils/store.ts`
 - 参考看板功能的状态管理实现
 
 ### Git Hooks
+
 - 项目配置了 Husky + lint-staged
 - pre-commit: 运行 lint-staged（格式化代码）
 - pre-push: 运行构建检查
 
 ### 环境配置
+
 - 复制 `env.example.txt` 为 `.env.local`
 - Clerk 认证支持无密钥模式，可以立即开始开发
 - Sentry 错误追踪需要配置相应的环境变量
@@ -112,6 +120,7 @@ pnpm run format:check
 项目已配置完整的 Docker 生产部署方案：
 
 ### 快速部署
+
 ```bash
 # 构建并启动所有服务
 ./scripts/deploy.sh -b -u
@@ -124,12 +133,14 @@ pnpm run format:check
 ```
 
 ### 部署架构
+
 - **多阶段 Dockerfile**: 优化镜像大小，生产构建
 - **Nginx 反向代理**: 处理静态文件缓存、负载均衡、SSL终止
 - **Docker Compose**: 容器编排，包含健康检查和资源限制
 - **部署脚本**: 自动化部署流程
 
 ### 相关文件
+
 - `scripts/deploy.sh` - 自动化部署脚本
 - `scripts/docker/Dockerfile` - 多阶段构建配置
 - `scripts/docker/docker-compose.yml` - 容器编排配置

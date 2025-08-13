@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,14 +14,42 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Lock, User } from 'lucide-react';
+import { Loader2, Lock, User, Info } from 'lucide-react';
+
+interface MockUser {
+  username: string;
+  displayName: string;
+  hint: string;
+}
 
 export default function SignInPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mockUsers, setMockUsers] = useState<MockUser[]>([]);
+  const [isDevelopment, setIsDevelopment] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Check if we're in development mode
+    fetch('/api/auth/mock-users')
+      .then((res) => {
+        if (res.ok) {
+          setIsDevelopment(true);
+          return res.json();
+        }
+        return null;
+      })
+      .then((data) => {
+        if (data) {
+          setMockUsers(data.users);
+        }
+      })
+      .catch(() => {
+        // In production, this endpoint won't exist
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +81,26 @@ export default function SignInPage() {
     }
   };
 
+  const handleQuickLogin = (user: MockUser) => {
+    setUsername(user.username);
+    // Extract password from hint
+    const passwordMatch = user.hint.match(/密码:\s*(.+)/);
+    if (passwordMatch) {
+      setPassword(passwordMatch[1]);
+    }
+  };
+
   return (
     <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4 dark:from-gray-900 dark:to-gray-800'>
       <Card className='w-full max-w-md'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-center text-2xl font-bold'>
-            域账号登录
+            {isDevelopment ? '开发环境登录' : '域账号登录'}
           </CardTitle>
           <CardDescription className='text-center'>
-            使用您的 Windows 域账号登录系统
+            {isDevelopment
+              ? '使用测试账号登录系统'
+              : '使用您的 Windows 域账号登录系统'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -72,6 +111,36 @@ export default function SignInPage() {
               </Alert>
             )}
 
+            {isDevelopment && mockUsers.length > 0 && (
+              <Alert>
+                <Info className='h-4 w-4' />
+                <AlertDescription>
+                  <div className='mt-2 space-y-2'>
+                    <p className='text-sm font-medium'>可用测试账号：</p>
+                    <div className='space-y-1'>
+                      {mockUsers.map((user) => (
+                        <Button
+                          key={user.username}
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          className='w-full justify-start text-left'
+                          onClick={() => handleQuickLogin(user)}
+                        >
+                          <span className='mr-2 font-medium'>
+                            {user.displayName}
+                          </span>
+                          <span className='text-muted-foreground text-xs'>
+                            ({user.username}) - {user.hint}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className='space-y-2'>
               <Label htmlFor='username'>用户名</Label>
               <div className='relative'>
@@ -79,7 +148,9 @@ export default function SignInPage() {
                 <Input
                   id='username'
                   type='text'
-                  placeholder='域账号 (不需要域名前缀)'
+                  placeholder={
+                    isDevelopment ? '输入测试用户名' : '域账号 (不需要域名前缀)'
+                  }
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className='pl-10'
@@ -96,7 +167,7 @@ export default function SignInPage() {
                 <Input
                   id='password'
                   type='password'
-                  placeholder='域账号密码'
+                  placeholder={isDevelopment ? '输入密码' : '域账号密码'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className='pl-10'

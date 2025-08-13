@@ -63,7 +63,7 @@ export class ActiveDirectoryAuth {
           username
         );
         const searchOptions = {
-          scope: 'sub',
+          scope: 'sub' as const,
           filter: searchFilter,
           attributes: [
             'sAMAccountName',

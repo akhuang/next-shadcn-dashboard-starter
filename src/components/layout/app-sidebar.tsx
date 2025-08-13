@@ -33,6 +33,7 @@ import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/constants/data';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
+import { NavItem } from '@/types';
 // import { useUser } from '@clerk/nextjs';
 import {
   IconBell,
@@ -61,7 +62,7 @@ function CollapsibleMenuItem({
   hasActiveSubItem,
   pathname
 }: {
-  item: any;
+  item: NavItem;
   hasActiveSubItem: boolean;
   pathname: string;
 }) {
@@ -207,7 +208,7 @@ export default function AppSidebar() {
                   <CollapsibleMenuItem
                     key={item.title}
                     item={item}
-                    hasActiveSubItem={hasActiveSubItem}
+                    hasActiveSubItem={hasActiveSubItem ?? false}
                     pathname={pathname}
                   />
                 )

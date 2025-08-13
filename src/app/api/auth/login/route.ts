@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createADAuth } from '@/lib/auth/ldap';
+import { createMockAuth } from '@/lib/auth/mock-auth';
 import { createToken } from '@/lib/auth/verify';
 
 export async function POST(request: NextRequest) {
@@ -13,8 +14,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adAuth = createADAuth();
-    const user = await adAuth.authenticate(username, password);
+    // Check auth mode from environment
+    const authMode = process.env.AUTH_MODE || 'development';
+    let user = null;
+
+    if (authMode === 'production') {
+      // Use Active Directory authentication in production
+      const adAuth = createADAuth();
+      user = await adAuth.authenticate(username, password);
+    } else {
+      // Use mock authentication in development
+      const mockAuth = createMockAuth();
+      user = await mockAuth.authenticate(username, password);
+    }
 
     if (!user) {
       return NextResponse.json({ error: '用户名或密码错误' }, { status: 401 });

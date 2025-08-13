@@ -1,0 +1,254 @@
+{
+  "frequentlyUsedLinks": [
+    {
+      "id": "gitlab",
+      "title": "GitLab",
+      "description": "代码仓库管理平台",
+      "url": "https://gitlab.company.com",
+      "icon": "GitBranch",
+      "isExternal": true
+    },
+    {
+      "id": "jenkins",
+      "title": "Jenkins",
+      "description": "CI/CD 自动化构建",
+      "url": "https://jenkins.company.com",
+      "icon": "Gauge",
+      "isExternal": true
+    },
+    {
+      "id": "confluence",
+      "title": "Confluence",
+      "description": "团队协作文档平台",
+      "url": "https://confluence.company.com",
+      "icon": "FileText",
+      "isExternal": true
+    },
+    {
+      "id": "jira",
+      "title": "Jira",
+      "description": "项目管理和问题跟踪",
+      "url": "https://jira.company.com",
+      "icon": "Users",
+      "isExternal": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "development",
+      "title": "开发工具",
+      "description": "代码开发和版本控制相关工具",
+      "icon": "Code",
+      "links": [
+        {
+          "id": "gitlab-main",
+          "title": "GitLab",
+          "description": "企业级代码仓库管理平台",
+          "url": "https://gitlab.company.com",
+          "icon": "GitBranch",
+          "isExternal": true
+        },
+        {
+          "id": "sonar",
+          "title": "SonarQube",
+          "description": "代码质量检测平台",
+          "url": "https://sonar.company.com",
+          "icon": "Shield",
+          "isExternal": true
+        },
+        {
+          "id": "nexus",
+          "title": "Nexus",
+          "description": "Maven 私有仓库",
+          "url": "https://nexus.company.com",
+          "icon": "Package",
+          "isExternal": true
+        },
+        {
+          "id": "harbor",
+          "title": "Harbor",
+          "description": "Docker 镜像仓库",
+          "url": "https://harbor.company.com",
+          "icon": "Package",
+          "isExternal": true
+        }
+      ]
+    },
+    {
+      "id": "operations",
+      "title": "运维平台",
+      "description": "系统监控和运维管理工具",
+      "icon": "Monitor",
+      "links": [
+        {
+          "id": "jenkins-ops",
+          "title": "Jenkins",
+          "description": "CI/CD 持续集成平台",
+          "url": "https://jenkins.company.com",
+          "icon": "Gauge",
+          "isExternal": true
+        },
+        {
+          "id": "prometheus",
+          "title": "Prometheus",
+          "description": "系统监控和告警",
+          "url": "https://prometheus.company.com",
+          "icon": "Monitor",
+          "isExternal": true
+        },
+        {
+          "id": "grafana",
+          "title": "Grafana",
+          "description": "数据可视化监控面板",
+          "url": "https://grafana.company.com",
+          "icon": "Monitor",
+          "isExternal": true
+        },
+        {
+          "id": "kubernetes",
+          "title": "Kubernetes Dashboard",
+          "description": "容器编排管理平台",
+          "url": "https://k8s.company.com",
+          "icon": "Cpu",
+          "isExternal": true
+        }
+      ]
+    },
+    {
+      "id": "documentation",
+      "title": "文档协作",
+      "description": "知识管理和团队协作平台",
+      "icon": "FileText",
+      "links": [
+        {
+          "id": "confluence-doc",
+          "title": "Confluence",
+          "description": "企业知识库和文档协作",
+          "url": "https://confluence.company.com",
+          "icon": "FileText",
+          "isExternal": true
+        },
+        {
+          "id": "wiki",
+          "title": "Wiki",
+          "description": "技术文档和知识分享",
+          "url": "https://wiki.company.com",
+          "icon": "Globe",
+          "isExternal": true
+        },
+        {
+          "id": "api-doc",
+          "title": "API 文档",
+          "description": "接口文档管理平台",
+          "url": "https://api-doc.company.com",
+          "icon": "Code",
+          "isExternal": true
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "title": "项目管理",
+      "description": "项目跟踪和团队协作工具",
+      "icon": "Users",
+      "links": [
+        {
+          "id": "jira-pm",
+          "title": "Jira",
+          "description": "敏捷项目管理和缺陷跟踪",
+          "url": "https://jira.company.com",
+          "icon": "Users",
+          "isExternal": true
+        },
+        {
+          "id": "redmine",
+          "title": "Redmine",
+          "description": "项目管理和问题跟踪",
+          "url": "https://redmine.company.com",
+          "icon": "Settings",
+          "isExternal": true
+        },
+        {
+          "id": "teams",
+          "title": "Microsoft Teams",
+          "description": "团队沟通和协作平台",
+          "url": "https://teams.microsoft.com",
+          "icon": "Users",
+          "isExternal": true
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "title": "数据服务",
+      "description": "数据库和数据管理工具",
+      "icon": "Database",
+      "links": [
+        {
+          "id": "mysql-admin",
+          "title": "phpMyAdmin",
+          "description": "MySQL 数据库管理",
+          "url": "https://mysql.company.com",
+          "icon": "Database",
+          "isExternal": true
+        },
+        {
+          "id": "redis-admin",
+          "title": "Redis Commander",
+          "description": "Redis 数据库管理",
+          "url": "https://redis.company.com",
+          "icon": "Database",
+          "isExternal": true
+        },
+        {
+          "id": "elastic",
+          "title": "Elasticsearch",
+          "description": "全文搜索引擎",
+          "url": "https://elastic.company.com",
+          "icon": "Database",
+          "isExternal": true
+        },
+        {
+          "id": "kibana",
+          "title": "Kibana",
+          "description": "日志分析和可视化",
+          "url": "https://kibana.company.com",
+          "icon": "Monitor",
+          "isExternal": true
+        }
+      ]
+    },
+    {
+      "id": "cloud",
+      "title": "云服务",
+      "description": "云平台和服务管理",
+      "icon": "Cloud",
+      "links": [
+        {
+          "id": "aws",
+          "title": "AWS Console",
+          "description": "亚马逊云服务控制台",
+          "url": "https://console.aws.amazon.com",
+          "icon": "Cloud",
+          "isExternal": true
+        },
+        {
+          "id": "aliyun",
+          "title": "阿里云",
+          "description": "阿里云管理控制台",
+          "url": "https://console.aliyun.com",
+          "icon": "Cloud",
+          "isExternal": true
+        },
+        {
+          "id": "tencent-cloud",
+          "title": "腾讯云",
+          "description": "腾讯云管理控制台",
+          "url": "https://console.cloud.tencent.com",
+          "icon": "Cloud",
+          "isExternal": true
+        }
+      ]
+    }
+  ]
+}
