@@ -7,13 +7,43 @@ import {
   KBarProvider,
   KBarSearch
 } from 'kbar';
-import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
 
+interface Contact {
+  id: string;
+  fileName: string;
+  sheetName: string;
+  rowData: Record<string, any>;
+  searchableText: string;
+}
+
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [contactsData, setContactsData] = useState<Contact[]>([]);
+  const [isContactsPage, setIsContactsPage] = useState(false);
+
+  // 检测是否在联系人页面并获取联系人数据
+  useEffect(() => {
+    const isOnContactsPage = pathname?.includes('/contacts');
+    setIsContactsPage(isOnContactsPage || false);
+
+    if (isOnContactsPage) {
+      // 从全局或API获取联系人数据
+      fetch('/api/excel?action=getData')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data?.contacts) {
+            setContactsData(data.data.contacts);
+          }
+        })
+        // eslint-disable-next-line no-console
+        .catch((err) => console.error('Failed to load contacts:', err));
+    }
+  }, [pathname]);
 
   // These action are for the navigation
   const actions = useMemo(() => {
@@ -22,7 +52,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       router.push(url);
     };
 
-    return navItems.flatMap((navItem) => {
+    const navigationActions = navItems.flatMap((navItem) => {
       // Only include base action if the navItem has a real URL and is not just a container
       const baseAction =
         navItem.url !== '#'
@@ -52,7 +82,35 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       // Return only valid actions (ignoring null base actions for containers)
       return baseAction ? [baseAction, ...childActions] : childActions;
     });
-  }, [router]);
+
+    // 添加联系人搜索actions
+    const contactActions =
+      isContactsPage && contactsData.length > 0
+        ? contactsData.map((contact) => {
+            // 获取联系人的主要显示信息
+            const displayKeys = Object.keys(contact.rowData).slice(0, 3);
+            const displayInfo = displayKeys
+              .map((key) => contact.rowData[key])
+              .filter(Boolean)
+              .join(' • ');
+
+            return {
+              id: `contact-${contact.id}`,
+              name: displayInfo || 'Contact',
+              shortcut: [],
+              keywords: contact.searchableText,
+              section: 'Contacts',
+              subtitle: `${contact.fileName.replace(/\.[^/.]+$/, '')} > ${contact.sheetName}`,
+              perform: () => {
+                // 导航到联系人页面并高亮该条目
+                router.push(`/dashboard/contacts?highlight=${contact.id}`);
+              }
+            };
+          })
+        : [];
+
+    return [...navigationActions, ...contactActions];
+  }, [router, isContactsPage, contactsData]);
 
   return (
     <KBarProvider actions={actions}>

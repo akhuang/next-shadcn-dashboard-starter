@@ -45,20 +45,34 @@ export function DataTableColumnHeader<TData, TValue>({
       >
         {title}
         {column.getCanSort() &&
-          (column.getIsSorted() === 'desc' ? (
-            <ChevronDownIcon />
-          ) : column.getIsSorted() === 'asc' ? (
-            <ChevronUpIcon />
-          ) : (
-            <CaretSortIcon />
-          ))}
+          (() => {
+            try {
+              const sortDirection = column.getIsSorted();
+              return sortDirection === 'desc' ? (
+                <ChevronDownIcon />
+              ) : sortDirection === 'asc' ? (
+                <ChevronUpIcon />
+              ) : (
+                <CaretSortIcon />
+              );
+            } catch (error) {
+              console.warn('排序状态检查失败:', error);
+              return <CaretSortIcon />;
+            }
+          })()}
       </DropdownMenuTrigger>
       <DropdownMenuContent align='start' className='w-28'>
         {column.getCanSort() && (
           <>
             <DropdownMenuCheckboxItem
               className='[&_svg]:text-muted-foreground relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto'
-              checked={column.getIsSorted() === 'asc'}
+              checked={(() => {
+                try {
+                  return column.getIsSorted() === 'asc';
+                } catch {
+                  return false;
+                }
+              })()}
               onClick={() => column.toggleSorting(false)}
             >
               <ChevronUpIcon />
@@ -66,13 +80,25 @@ export function DataTableColumnHeader<TData, TValue>({
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               className='[&_svg]:text-muted-foreground relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto'
-              checked={column.getIsSorted() === 'desc'}
+              checked={(() => {
+                try {
+                  return column.getIsSorted() === 'desc';
+                } catch {
+                  return false;
+                }
+              })()}
               onClick={() => column.toggleSorting(true)}
             >
               <ChevronDownIcon />
               Desc
             </DropdownMenuCheckboxItem>
-            {column.getIsSorted() && (
+            {(() => {
+              try {
+                return column.getIsSorted();
+              } catch {
+                return false;
+              }
+            })() && (
               <DropdownMenuItem
                 className='[&_svg]:text-muted-foreground pl-2'
                 onClick={() => column.clearSorting()}

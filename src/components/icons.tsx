@@ -27,6 +27,7 @@ import {
   IconUser,
   IconUserCircle,
   IconUserEdit,
+  IconUsers,
   IconUserX,
   IconX,
   IconLayoutKanban,
@@ -68,5 +69,6 @@ export const Icons = {
   github: IconBrandGithub,
   twitter: IconBrandTwitter,
   check: IconCheck,
-  globe: IconWorld
+  globe: IconWorld,
+  users: IconUsers
 };

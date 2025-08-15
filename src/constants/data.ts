@@ -84,6 +84,14 @@ export const navItems: NavItem[] = [
     items: [] // No child items
   },
   {
+    title: '联系人管理',
+    url: '/dashboard/contacts',
+    icon: 'users',
+    shortcut: ['c', 'c'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
     title: '字体测试',
     url: '/dashboard/font-test',
     icon: 'dashboard',

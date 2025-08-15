@@ -1,0 +1,224 @@
+/* Excel Table Styles */
+.spreadsheet-container {
+  width: auto !important;
+  height: auto !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: visible !important;
+}
+
+.Spreadsheet {
+  width: auto !important;
+  height: auto !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: visible !important;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.Spreadsheet__table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: auto !important;
+  min-width: max-content !important;
+  font-size: 14px;
+  table-layout: auto !important;
+}
+
+.Spreadsheet__header {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  color: #334155;
+}
+
+.Spreadsheet__cell {
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  min-width: 150px !important;
+  width: 150px !important;
+  max-width: none !important;
+  height: 36px;
+  vertical-align: middle;
+  position: relative;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.Spreadsheet__cell--readonly {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  color: #475569;
+  cursor: default;
+}
+
+.Spreadsheet__cell--selected {
+  background-color: #dbeafe !important;
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 0 0 1px #3b82f6;
+  z-index: 10;
+}
+
+.Spreadsheet__cell--active {
+  border: 2px solid #059669 !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+  z-index: 11;
+}
+
+.Spreadsheet__cell:hover:not(.Spreadsheet__cell--readonly):not(
+    .Spreadsheet__cell--selected
+  ) {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.Spreadsheet__input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  padding: 4px;
+  font-size: 14px;
+  background: transparent;
+  font-family: inherit;
+}
+
+.Spreadsheet__input:focus {
+  background-color: white;
+  box-shadow: inset 0 0 0 2px #3b82f6;
+  border-radius: 4px;
+}
+
+/* 行号和列号样式 */
+.Spreadsheet__cell--row-header,
+.Spreadsheet__cell--column-header {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+  border-color: #cbd5e1;
+}
+
+.Spreadsheet__cell--row-header {
+  min-width: 60px;
+  width: 60px;
+  max-width: 60px;
+}
+
+.Spreadsheet__cell--column-header {
+  height: 32px;
+  padding: 4px 8px;
+}
+
+/* 选择区域样式 */
+.Spreadsheet__selection {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 2px solid #3b82f6;
+  pointer-events: none;
+}
+
+/* 调整滚动条样式 */
+.Spreadsheet::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.Spreadsheet::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.Spreadsheet::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.Spreadsheet::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 数据类型指示器 */
+.Spreadsheet__cell[data-type='number'] {
+  text-align: right;
+  font-feature-settings: 'tnum';
+}
+
+.Spreadsheet__cell[data-type='date'] {
+  color: #7c3aed;
+}
+
+.Spreadsheet__cell[data-type='email'] {
+  color: #0891b2;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s ease;
+}
+
+.Spreadsheet__cell[data-type='email']:hover {
+  text-decoration-color: #0891b2;
+}
+
+/* 错误状态 */
+.Spreadsheet__cell--error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #f87171;
+}
+
+/* 冻结列样式 */
+.Spreadsheet__cell--frozen {
+  position: sticky;
+  left: 0;
+  background-color: #fefefe;
+  z-index: 5;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .Spreadsheet__cell {
+    min-width: 100px;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  .Spreadsheet__cell--row-header {
+    min-width: 50px;
+    width: 50px;
+    max-width: 50px;
+  }
+}
+
+/* 加载状态 */
+.spreadsheet-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #f8fafc;
+  color: #64748b;
+}
+
+.spreadsheet-loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
