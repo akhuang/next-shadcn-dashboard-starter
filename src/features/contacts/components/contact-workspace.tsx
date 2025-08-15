@@ -181,21 +181,66 @@ export default function ContactWorkspace() {
     }
 
     const query = searchQuery.toLowerCase();
-    return data.contacts.filter((contact) => {
+    const results = data.contacts.filter((contact) => {
       // 搜索所有字段
       return Object.values(contact.rowData).some((value) =>
         value?.toString().toLowerCase().includes(query)
       );
     });
+
+    // 按文件和Sheet分组
+    const grouped = results.reduce(
+      (acc, contact) => {
+        const key = `${contact.fileName}|||${contact.sheetName}`;
+        if (!acc[key]) {
+          acc[key] = {
+            fileName: contact.fileName,
+            sheetName: contact.sheetName,
+            contacts: []
+          };
+        }
+        acc[key].contacts.push(contact);
+        return acc;
+      },
+      {} as Record<
+        string,
+        { fileName: string; sheetName: string; contacts: typeof results }
+      >
+    );
+
+    return {
+      total: results,
+      grouped: Object.values(grouped),
+      hasMultipleSources: Object.keys(grouped).length > 1
+    };
   }, [data.contacts, searchQuery]);
 
-  // 显示的联系人数据：如果有搜索，显示搜索结果；否则显示当前Sheet数据
+  // 显示的联系人数据：根据搜索和选择状态智能决定
   const displayContacts = useMemo(() => {
-    if (globalSearchResults !== null) {
-      return globalSearchResults;
+    // 没有搜索，显示当前选中的Sheet数据
+    if (!globalSearchResults) {
+      return currentSheetContacts;
     }
-    return currentSheetContacts;
-  }, [globalSearchResults, currentSheetContacts]);
+
+    // 有搜索结果
+    const currentKey = `${selectedFile}|||${selectedSheet}`;
+    const currentGroup = globalSearchResults.grouped.find(
+      (g) => `${g.fileName}|||${g.sheetName}` === currentKey
+    );
+
+    // 如果当前选中的文件/sheet有搜索结果，优先显示
+    if (currentGroup) {
+      return currentGroup.contacts;
+    }
+
+    // 如果搜索结果来自多个源，显示所有结果
+    if (globalSearchResults.hasMultipleSources) {
+      return globalSearchResults.total;
+    }
+
+    // 显示所有搜索结果
+    return globalSearchResults.total;
+  }, [globalSearchResults, currentSheetContacts, selectedFile, selectedSheet]);
 
   // 初始化选择
   useEffect(() => {
@@ -353,9 +398,16 @@ export default function ContactWorkspace() {
                   </button>
                 )}
               </div>
-              {searchQuery && (
+              {searchQuery && globalSearchResults && (
                 <div className='text-muted-foreground mt-1 text-center text-xs'>
-                  在所有文件中找到 {displayContacts.length} 条结果
+                  {globalSearchResults.hasMultipleSources ? (
+                    <>
+                      在 {globalSearchResults.grouped.length} 个源中找到{' '}
+                      {displayContacts.length} 条结果
+                    </>
+                  ) : (
+                    <>找到 {displayContacts.length} 条结果</>
+                  )}
                 </div>
               )}
             </div>
