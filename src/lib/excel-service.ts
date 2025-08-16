@@ -10,6 +10,27 @@ class ExcelService {
   private sheetInfoMap: Record<string, Record<string, SheetInfo>> = {};
   private watcher: any = null;
   private listeners: Set<(data: ExcelData) => void> = new Set();
+  private reloadTimer: NodeJS.Timeout | null = null;
+
+  constructor() {
+    try {
+      const envPath = process.env.EXCEL_WATCH_DIR;
+      if (envPath && fs.existsSync(envPath)) {
+        this.folderPath = envPath;
+        this.startWatching();
+        this.loadAllExcelFiles();
+      }
+    } catch {
+      // ignore env init errors
+    }
+  }
+
+  private scheduleReload() {
+    if (this.reloadTimer) clearTimeout(this.reloadTimer);
+    this.reloadTimer = setTimeout(() => {
+      this.loadAllExcelFiles();
+    }, 300);
+  }
 
   setFolderPath(folderPath: string) {
     this.folderPath = folderPath;
@@ -26,6 +47,11 @@ class ExcelService {
       return;
     }
 
+    const usePolling = process.env.EXCEL_WATCH_POLLING === 'true';
+    const pollInterval = process.env.EXCEL_WATCH_INTERVAL
+      ? Number(process.env.EXCEL_WATCH_INTERVAL)
+      : undefined;
+
     this.watcher = chokidar.watch(
       path.join(this.folderPath, '**/*.{xlsx,xls,xlsm}'),
       {
@@ -35,20 +61,17 @@ class ExcelService {
           const base = path.basename(watchedPath);
           // 忽略 Excel 临时文件和隐藏前缀文件
           return base.startsWith('~$') || base.startsWith('._');
-        }
+        },
+        awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 100 },
+        usePolling,
+        interval: pollInterval
       }
     );
 
     this.watcher
-      .on('add', () => {
-        this.loadAllExcelFiles();
-      })
-      .on('change', () => {
-        this.loadAllExcelFiles();
-      })
-      .on('unlink', () => {
-        this.loadAllExcelFiles();
-      });
+      .on('add', () => this.scheduleReload())
+      .on('change', () => this.scheduleReload())
+      .on('unlink', () => this.scheduleReload());
   }
 
   private async loadAllExcelFiles() {
