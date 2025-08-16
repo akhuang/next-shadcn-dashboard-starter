@@ -483,13 +483,13 @@ export default function ContactWorkspace() {
 
         <div className='flex min-h-0 flex-1 overflow-hidden'>
           {/* 左侧文件列表 */}
-          <div className='bg-muted/20 flex w-60 flex-shrink-0 flex-col border-r'>
+          <div className='bg-muted/20 flex w-60 flex-shrink-0 flex-col overflow-hidden border-r'>
             <div className='flex-shrink-0 border-b p-3'>
               <h2 className='text-muted-foreground text-sm font-medium'>
                 数据源
               </h2>
             </div>
-            <ScrollArea className='flex-1'>
+            <ScrollArea className='flex-1 overflow-y-auto'>
               <div className='space-y-1 p-2'>
                 {fileDataList.map((fileData) => {
                   const {
@@ -505,7 +505,7 @@ export default function ContactWorkspace() {
                       key={fileData.fileName}
                       variant='ghost'
                       className={cn(
-                        'h-auto w-full cursor-pointer justify-start p-3 font-normal transition-all',
+                        'h-auto w-full cursor-pointer justify-start p-2 font-normal transition-all',
                         hoverColor,
                         isSelected && 'bg-accent shadow-sm'
                       )}
@@ -513,20 +513,20 @@ export default function ContactWorkspace() {
                     >
                       <div
                         className={cn(
-                          'mr-3 flex-shrink-0 rounded-md p-2',
+                          'mr-2 flex-shrink-0 rounded-md p-1.5',
                           bgColor
                         )}
                       >
                         <FileIcon className={cn('h-4 w-4', color)} />
                       </div>
-                      <div className='min-w-0 flex-1 text-left'>
+                      <div className='min-w-0 flex-1 overflow-hidden text-left'>
                         <div
                           className='truncate text-sm font-medium'
                           title={fileData.displayName}
                         >
                           {fileData.displayName}
                         </div>
-                        <div className='text-muted-foreground text-xs'>
+                        <div className='text-muted-foreground truncate text-xs'>
                           {fileData.sheets.length} 个分类 ·{' '}
                           {fileData.totalContacts} 条记录
                         </div>
