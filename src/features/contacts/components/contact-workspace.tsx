@@ -627,6 +627,7 @@ export default function ContactWorkspace() {
                             : sheet.columns
                         }
                         onExport={exportToCSV}
+                        enableAutoMerge={true}
                       />
                     )}
                   </TabsContent>

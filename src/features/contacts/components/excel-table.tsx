@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import '@/styles/excel-table.css';
 import { Button } from '@/components/ui/button';
 import { Download, Copy } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Contact {
   id: string;
@@ -13,17 +14,102 @@ interface Contact {
   searchableText: string;
 }
 
+interface MergeRange {
+  startRow: number;
+  endRow: number;
+  startCol: number;
+  endCol: number;
+}
+
 interface ExcelTableProps {
   contacts: Contact[];
   columns: string[];
   onExport?: () => void;
+  mergeRanges?: MergeRange[];
+  enableAutoMerge?: boolean;
 }
 
 export default function ExcelTable({
   contacts,
   columns,
-  onExport
+  onExport,
+  mergeRanges = [],
+  enableAutoMerge = false
 }: ExcelTableProps) {
+  // 计算自动合并的单元格
+  const autoMergeRanges = useMemo(() => {
+    if (!enableAutoMerge || contacts.length === 0) return [];
+
+    const merges: MergeRange[] = [];
+
+    // 对每一列进行检查
+    columns.forEach((col, colIndex) => {
+      let startRow = 0;
+      let currentValue = contacts[0].rowData[col];
+
+      for (let rowIndex = 1; rowIndex <= contacts.length; rowIndex++) {
+        const nextValue = contacts[rowIndex]?.rowData[col];
+
+        // 如果值不同或到达末尾，检查是否需要合并
+        if (nextValue !== currentValue || rowIndex === contacts.length) {
+          if (rowIndex - startRow > 1) {
+            merges.push({
+              startRow,
+              endRow: rowIndex - 1,
+              startCol: colIndex,
+              endCol: colIndex
+            });
+          }
+          startRow = rowIndex;
+          currentValue = nextValue;
+        }
+      }
+    });
+
+    return merges;
+  }, [contacts, columns, enableAutoMerge]);
+
+  // 合并所有的合并范围
+  const allMergeRanges = useMemo(() => {
+    return [...mergeRanges, ...autoMergeRanges];
+  }, [mergeRanges, autoMergeRanges]);
+
+  // 检查单元格是否需要被跳过（因为被合并了）
+  const shouldSkipCell = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      return allMergeRanges.some(
+        (range) =>
+          rowIndex >= range.startRow &&
+          rowIndex <= range.endRow &&
+          colIndex >= range.startCol &&
+          colIndex <= range.endCol &&
+          !(rowIndex === range.startRow && colIndex === range.startCol)
+      );
+    },
+    [allMergeRanges]
+  );
+
+  // 获取单元格的合并属性
+  const getCellMergeProps = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      const range = allMergeRanges.find(
+        (r) => r.startRow === rowIndex && r.startCol === colIndex
+      );
+
+      if (!range) return {};
+
+      const props: any = {};
+      const rowSpan = range.endRow - range.startRow + 1;
+      const colSpan = range.endCol - range.startCol + 1;
+
+      if (rowSpan > 1) props.rowSpan = rowSpan;
+      if (colSpan > 1) props.colSpan = colSpan;
+
+      return props;
+    },
+    [allMergeRanges]
+  );
+
   const handleCopy = useCallback(() => {
     // 简化复制功能 - 复制当前数据
     if (contacts.length === 0) return;
@@ -73,17 +159,34 @@ export default function ExcelTable({
                   <td className='sticky left-0 z-10 border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-500'>
                     {rowIndex + 1}
                   </td>
-                  {columns.map((column, colIndex) => (
-                    <td
-                      key={colIndex}
-                      className='border border-gray-300 px-3 py-2 text-sm'
-                      title={contact.rowData[column] || ''}
-                    >
-                      <div className='max-w-xs truncate'>
-                        {contact.rowData[column] || ''}
-                      </div>
-                    </td>
-                  ))}
+                  {columns.map((column, colIndex) => {
+                    // 检查是否需要跳过这个单元格
+                    if (shouldSkipCell(rowIndex, colIndex)) {
+                      return null;
+                    }
+
+                    // 获取合并属性
+                    const mergeProps = getCellMergeProps(rowIndex, colIndex);
+                    const isMerged = mergeProps.rowSpan || mergeProps.colSpan;
+
+                    return (
+                      <td
+                        key={colIndex}
+                        className={cn(
+                          'border border-gray-300 px-3 py-2 text-sm',
+                          isMerged && 'bg-gray-50 text-center align-middle'
+                        )}
+                        title={contact.rowData[column] || ''}
+                        {...mergeProps}
+                      >
+                        <div
+                          className={cn('truncate', !isMerged && 'max-w-xs')}
+                        >
+                          {contact.rowData[column] || ''}
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
