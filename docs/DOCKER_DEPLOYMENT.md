@@ -18,7 +18,7 @@
 
 ```
 scripts/
-├── deploy.sh              # 部署脚本
+├── deploy-env.sh          # 部署脚本
 └── docker/
     ├── docker-compose.yml # Docker 编排配置
     ├── Dockerfile         # Next.js 应用构建配置
@@ -76,11 +76,11 @@ const baseConfig: NextConfig = {
 
 ```bash
 # 构建并启动所有服务
-./scripts/deploy.sh -b -u
+./scripts/deploy-env.sh -b -u
 
 # 或者分步执行
-./scripts/deploy.sh --build      # 仅构建
-./scripts/deploy.sh --up          # 启动容器
+./scripts/deploy-env.sh --build      # 仅构建
+./scripts/deploy-env.sh --up          # 启动容器
 ```
 
 ## 部署脚本使用
@@ -89,37 +89,37 @@ const baseConfig: NextConfig = {
 
 ```bash
 # 查看帮助
-./scripts/deploy.sh -h
+./scripts/deploy-env.sh -h
 
 # 构建镜像
-./scripts/deploy.sh -b
+./scripts/deploy-env.sh -b
 
 # 启动服务
-./scripts/deploy.sh -u
+./scripts/deploy-env.sh -u
 
 # 停止服务
-./scripts/deploy.sh -d
+./scripts/deploy-env.sh -d
 
 # 重启服务
-./scripts/deploy.sh -r
+./scripts/deploy-env.sh -r
 
 # 查看日志
-./scripts/deploy.sh -l
-./scripts/deploy.sh -l app    # 仅查看应用日志
-./scripts/deploy.sh -l nginx  # 仅查看 Nginx 日志
+./scripts/deploy-env.sh -l
+./scripts/deploy-env.sh -l app    # 仅查看应用日志
+./scripts/deploy-env.sh -l nginx  # 仅查看 Nginx 日志
 
 # 查看状态
-./scripts/deploy.sh -s
+./scripts/deploy-env.sh -s
 
 # 清理资源
-./scripts/deploy.sh -c
+./scripts/deploy-env.sh -c
 ```
 
 ### 生产环境部署
 
 ```bash
 # 使用生产配置构建并启动
-./scripts/deploy.sh --production -b -u
+./scripts/deploy-env.sh --production -b -u
 ```
 
 ## 手动部署步骤
@@ -134,19 +134,19 @@ cd scripts/docker
 ./generate-certs.sh
 
 # 3. 构建镜像
-docker-compose build
+docker compose build
 
 # 4. 启动服务（后台运行）
-docker-compose up -d
+docker compose up -d
 
 # 5. 查看运行状态
-docker-compose ps
+docker compose ps
 
 # 6. 查看日志
-docker-compose logs -f
+docker compose logs -f
 
 # 7. 停止服务
-docker-compose down
+docker compose down
 ```
 
 ## SSL/HTTPS 配置
@@ -229,10 +229,10 @@ services:
 
 ```bash
 # 查看实时日志
-docker-compose logs -f
+docker compose logs -f
 
 # 导出日志
-docker-compose logs > deployment.log
+docker compose logs > deployment.log
 
 # 清理旧日志
 docker run --rm -v nginx-logs:/logs alpine sh -c "find /logs -name '*.log' -mtime +7 -delete"
@@ -327,7 +327,7 @@ docker run --rm -v nextjs-dashboard_uploads:/data -v $(pwd):/backup alpine tar x
 git pull origin main
 
 # 2. 重新构建并部署
-./scripts/deploy.sh -b -r
+./scripts/deploy-env.sh -b -r
 ```
 
 ## 故障排查
@@ -338,8 +338,8 @@ git pull origin main
 
    ```bash
    # 查看详细错误日志
-   docker-compose logs app
-   docker-compose logs nginx
+   docker compose logs app
+   docker compose logs nginx
    ```
 
 2. **端口冲突**
@@ -354,7 +354,7 @@ git pull origin main
 
    ```bash
    # 清理缓存重新构建
-   docker-compose build --no-cache
+   docker compose build --no-cache
    ```
 
 4. **权限问题**

@@ -1,6 +1,6 @@
 # 多阶段构建 - 第一阶段：依赖安装  
 # 使用标准 Node.js 镜像，避免 Alpine 的兼容性问题
-FROM node:20 AS deps
+FROM node:22 AS deps
 
 # 配置代理环境变量（从构建参数传入）
 ARG HTTP_PROXY
@@ -37,10 +37,11 @@ RUN if [ -n "$HTTP_PROXY" ]; then pnpm config set proxy $HTTP_PROXY; fi && \
     if [ -n "$HTTPS_PROXY" ]; then pnpm config set https-proxy $HTTPS_PROXY; fi && \
     pnpm config set strict-ssl false
 
-RUN pnpm install --frozen-lockfile
+# use buildkit cache for pnpm store to speed up installs
+RUN --mount=type=cache,target=/root/.pnpm-store pnpm install --frozen-lockfile
 
 # 多阶段构建 - 第二阶段：构建应用
-FROM node:20 AS builder
+FROM node:22 AS builder
 WORKDIR /app
 
 # 配置代理环境变量（从构建参数传入）
@@ -83,7 +84,7 @@ RUN if [ -n "$HTTP_PROXY" ]; then pnpm config set proxy $HTTP_PROXY; fi && \
 RUN pnpm run build
 
 # 多阶段构建 - 第三阶段：生产运行
-FROM node:20-slim AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV production

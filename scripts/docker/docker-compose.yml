@@ -95,6 +95,7 @@ services:
 
 networks:
   dashboard-network:
+    name: dashboard-network
     driver: bridge
     ipam:
       driver: default

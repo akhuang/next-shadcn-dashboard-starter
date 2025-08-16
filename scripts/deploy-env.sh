@@ -177,7 +177,7 @@ build_images() {
     
     prepare_certs
     
-    docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" build
+    docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" build
     print_message "✓ Docker 镜像构建完成" "$GREEN"
 }
 
@@ -185,7 +185,7 @@ build_images() {
 start_containers() {
     print_message "🚀 启动容器 ($ENV 环境)..." "$BLUE"
     
-    docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" up -d
+    docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" up -d
     print_message "✓ 容器启动完成" "$GREEN"
     
     # 显示访问信息
@@ -203,23 +203,23 @@ start_containers() {
 # 停止容器
 stop_containers() {
     print_message "⏹️ 停止容器 ($ENV 环境)..." "$BLUE"
-    docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" down
+    docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" down
     print_message "✓ 容器已停止" "$GREEN"
 }
 
 # 重启容器
 restart_containers() {
     print_message "🔄 重启容器 ($ENV 环境)..." "$BLUE"
-    docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" restart
+    docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" restart
     print_message "✓ 容器已重启" "$GREEN"
 }
 
 # 查看日志
 show_logs() {
     if [ -z "$1" ]; then
-        docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" logs -f
+        docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" logs -f
     else
-        docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" logs -f "$1"
+        docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" logs -f "$1"
     fi
 }
 
@@ -274,10 +274,10 @@ show_status() {
     print_message "==================" "$BLUE"
     
     print_message "\n📦 容器状态:" "$BLUE"
-    docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps
+    docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps
     
     print_message "\n🏥 健康检查状态:" "$BLUE"
-    docker-compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps --format "table {{.Name}}\t{{.Status}}"
+    docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps --format "table {{.Name}}\t{{.Status}}"
     
     if [ "$ENV" = "dev" ]; then
         print_message "\n📌 开发环境访问地址:" "$GREEN"
@@ -297,11 +297,11 @@ show_all_status() {
     
     # 开发环境
     print_message "\n🔧 开发环境:" "$YELLOW"
-    docker-compose -p "nextjs-dashboard-dev" -f "docker-compose.dev.yml" ps 2>/dev/null || print_message "   未运行" "$GRAY"
+    docker compose -p "nextjs-dashboard-dev" -f "docker-compose.dev.yml" ps 2>/dev/null || print_message "   未运行" "$GRAY"
     
     # 生产环境
     print_message "\n🚀 生产环境:" "$YELLOW"
-    docker-compose -p "nextjs-dashboard" -f "docker-compose.yml" ps 2>/dev/null || print_message "   未运行" "$GRAY"
+    docker compose -p "nextjs-dashboard" -f "docker-compose.yml" ps 2>/dev/null || print_message "   未运行" "$GRAY"
     
     print_message "\n📌 访问地址:" "$GREEN"
     print_message "   开发: http://localhost:8089 | https://localhost:8445" "$YELLOW"

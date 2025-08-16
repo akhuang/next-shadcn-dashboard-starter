@@ -92,7 +92,7 @@ cd "$DOCKER_DIR"
 case $ACTION in
     up)
         echo -e "${GREEN}Starting analytics services...${NC}"
-        docker-compose -f docker-compose.analytics.yml up -d
+        docker compose -f docker-compose.analytics.yml up -d
         echo -e "${GREEN}Analytics services started!${NC}"
         echo ""
         echo "Access Plausible Analytics at:"
@@ -106,24 +106,24 @@ case $ACTION in
     
     down)
         echo -e "${YELLOW}Stopping analytics services...${NC}"
-        docker-compose -f docker-compose.analytics.yml down
+        docker compose -f docker-compose.analytics.yml down
         echo -e "${GREEN}Analytics services stopped${NC}"
         ;;
     
     restart)
         echo -e "${YELLOW}Restarting analytics services...${NC}"
-        docker-compose -f docker-compose.analytics.yml restart
+        docker compose -f docker-compose.analytics.yml restart
         echo -e "${GREEN}Analytics services restarted${NC}"
         ;;
     
     logs)
         echo -e "${GREEN}Showing analytics logs...${NC}"
-        docker-compose -f docker-compose.analytics.yml logs -f
+        docker compose -f docker-compose.analytics.yml logs -f
         ;;
     
     status)
         echo -e "${GREEN}Analytics services status:${NC}"
-        docker-compose -f docker-compose.analytics.yml ps
+        docker compose -f docker-compose.analytics.yml ps
         ;;
     
     clean)
@@ -132,7 +132,7 @@ case $ACTION in
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo -e "${YELLOW}Cleaning analytics data...${NC}"
-            docker-compose -f docker-compose.analytics.yml down -v
+            docker compose -f docker-compose.analytics.yml down -v
             echo -e "${GREEN}Analytics data cleaned${NC}"
         else
             echo -e "${YELLOW}Cancelled${NC}"
@@ -143,7 +143,7 @@ case $ACTION in
         echo -e "${GREEN}Initializing Plausible Analytics...${NC}"
         
         # Start services
-        docker-compose -f docker-compose.analytics.yml up -d
+        docker compose -f docker-compose.analytics.yml up -d
         
         # Wait for services to be ready
         echo "Waiting for services to be ready..."
@@ -151,7 +151,7 @@ case $ACTION in
         
         # Create admin user
         echo "Creating admin user..."
-        docker-compose -f docker-compose.analytics.yml exec plausible sh -c \
+        docker compose -f docker-compose.analytics.yml exec plausible sh -c \
             "bin/plausible eval 'Plausible.Auth.User.new(%{email: \"admin@example.com\", password: \"changeme123\", password_confirmation: \"changeme123\"}) |> Plausible.Repo.insert!()'" || true
         
         echo -e "${GREEN}Initialization complete!${NC}"

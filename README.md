@@ -172,7 +172,7 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 
 ```bash
 # 重新构建镜像并启动
-./deploy.sh -b -u
+./scripts/deploy-env.sh -b -u
 ```
 
 ### 端口配置
