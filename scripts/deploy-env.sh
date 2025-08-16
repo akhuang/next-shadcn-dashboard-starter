@@ -144,9 +144,9 @@ check_requirements() {
         print_message "错误: Docker 未安装" "$RED"
         exit 1
     fi
-    
-    if ! command -v docker-compose &> /dev/null; then
-        print_message "错误: Docker Compose 未安装" "$RED"
+    # Check docker compose plugin
+    if ! docker compose version >/dev/null 2>&1; then
+        print_message "错误: 未检测到 docker compose 插件 (需要 Docker Compose v2)" "$RED"
         exit 1
     fi
 }

@@ -1,17 +1,17 @@
 # Next.js Dashboard Portal - Nginx Configuration
 # 支持 HTTPS、反向代理和 iframe 嵌入
 
+# 代理缓存配置（用于静态资源）
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=STATIC:10m inactive=24h use_temp_path=off;
+
 # 上游服务器配置
 upstream dashboard_app {
     server app:3000;
     keepalive 64;
 }
 
-# Plausible Analytics 上游服务器
-upstream plausible_analytics {
-    server plausible:8000;
-    keepalive 32;
-}
+# Plausible Analytics 目标主机（使用变量 + resolver，避免启动时解析失败）
+# 注意：仅在收到 /analytics 相关请求时才解析，避免 Plausible 未启动导致 Nginx 退出
 
 # HTTP 服务器配置 - 仅用于重定向到 HTTPS
 server {
@@ -46,8 +46,7 @@ server {
     # add_header X-Frame-Options "SAMEORIGIN" always;
     # CSP 配置：允许更广泛的 iframe 嵌入
     add_header Content-Security-Policy "frame-ancestors 'self' https://* http://localhost:*" always;
-    # 设置 SameSite cookie 属性
-    add_header Set-Cookie "Path=/; HttpOnly; Secure; SameSite=None" always;
+    # 注意：不在全局添加 Set-Cookie，防止注入无效 Cookie 头
 
     # Gzip 压缩
     gzip on;
@@ -93,6 +92,7 @@ server {
     # ---- Next.js 静态文件优化 ----
     location /_next/static {
         proxy_pass http://dashboard_app;
+        proxy_cache STATIC;
         proxy_cache_valid 365d;
         add_header Cache-Control "public, max-age=31536000, immutable";
         access_log off;
@@ -101,6 +101,7 @@ server {
     # ---- 公共静态资源 ----
     location /static {
         proxy_pass http://dashboard_app;
+        proxy_cache STATIC;
         proxy_cache_valid 60m;
         add_header Cache-Control "public, max-age=3600";
     }
@@ -108,6 +109,7 @@ server {
     # ---- 图片和媒体文件缓存 ----
     location ~* \.(jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$ {
         proxy_pass http://dashboard_app;
+        proxy_cache STATIC;
         proxy_cache_valid 30d;
         add_header Cache-Control "public, max-age=2592000";
         access_log off;
@@ -127,11 +129,17 @@ server {
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
     }
 
+    # 供动态域名解析使用（Docker 内置 DNS）
+    resolver 127.0.0.11 valid=30s;
+
+    # Plausible 目标主机（延迟解析，避免启动失败）
+    set $plausible_host plausible:8000;
+
     # ---- Plausible Analytics 分析服务 ----
     location /analytics {
         # 移除 /analytics 前缀并代理到 Plausible
         rewrite ^/analytics(/.*)$ $1 break;
-        proxy_pass http://plausible_analytics;
+        proxy_pass http://$plausible_host;
         
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
@@ -152,7 +160,7 @@ server {
     
     # Plausible 追踪脚本
     location = /js/script.js {
-        proxy_pass http://plausible_analytics/js/script.js;
+        proxy_pass http://$plausible_host/js/script.js;
         proxy_set_header Host $host;
         proxy_cache_valid 6h;
         add_header Cache-Control "public, max-age=21600";
@@ -160,7 +168,7 @@ server {
     
     # Plausible API 端点
     location = /api/event {
-        proxy_pass http://plausible_analytics/api/event;
+        proxy_pass http://$plausible_host/api/event;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
