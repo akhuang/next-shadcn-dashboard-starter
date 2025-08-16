@@ -29,7 +29,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
-import { MergeRange } from '@/types/excel';
+import { MergeRange, ExcelData } from '@/types/excel';
 import ExcelTable from './excel-table';
 import ContactSearchOverlay from './contact-search-overlay';
 
@@ -39,12 +39,6 @@ interface Contact {
   sheetName: string;
   rowData: Record<string, any>;
   searchableText: string;
-}
-
-interface ExcelData {
-  contacts: Contact[];
-  lastUpdated: Date;
-  files: string[];
 }
 
 interface FileData {
@@ -278,7 +272,7 @@ export default function ContactWorkspace() {
         setData(result.data);
       }
     } catch (error) {
-      console.error('Error initializing folder:', error);
+      // ignore initialize error
     } finally {
       setLoading(false);
     }
@@ -505,7 +499,7 @@ export default function ContactWorkspace() {
                       key={fileData.fileName}
                       variant='ghost'
                       className={cn(
-                        'h-auto w-full cursor-pointer justify-start p-2 font-normal transition-all',
+                        'h-auto w-full cursor-pointer justify-start p-2 font-normal transition-all [&>*]:min-w-0',
                         hoverColor,
                         isSelected && 'bg-accent shadow-sm'
                       )}
@@ -519,7 +513,7 @@ export default function ContactWorkspace() {
                       >
                         <FileIcon className={cn('h-4 w-4', color)} />
                       </div>
-                      <div className='min-w-0 flex-1 overflow-hidden text-left'>
+                      <div className='w-0 min-w-0 flex-1 overflow-hidden text-left'>
                         <div
                           className='truncate text-sm font-medium'
                           title={fileData.displayName}

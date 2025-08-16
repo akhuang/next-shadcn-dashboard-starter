@@ -97,7 +97,9 @@ export default function ContactSearchOverlay({
         <div className='flex items-center gap-3 border-b p-4'>
           <Search className='text-muted-foreground h-5 w-5' />
           <div className='flex-1'>
-            <div className='text-sm font-medium'>搜索: "{searchQuery}"</div>
+            <div className='text-sm font-medium'>
+              搜索: &quot;{searchQuery}&quot;
+            </div>
             {searchResults && (
               <div className='text-muted-foreground mt-1 text-xs'>
                 在 {searchResults.grouped.length} 个位置找到{' '}

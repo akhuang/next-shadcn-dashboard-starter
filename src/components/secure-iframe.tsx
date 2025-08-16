@@ -37,10 +37,10 @@ export function SecureIframe({
           // 通过Nginx代理转换HTTP为HTTPS
           const proxyPath = `/http-proxy/${url.hostname}:${url.port || 80}${url.pathname}${url.search}`;
           setProxiedSrc(proxyPath);
-          console.log(`🔄 HTTP URL已代理: ${src} -> ${proxyPath}`);
+          // console.log(`🔄 HTTP URL已代理: ${src} -> ${proxyPath}`);
         } else {
           // 非IP地址的HTTP URL，显示错误
-          console.warn(`⚠️ 无法在HTTPS页面中加载HTTP内容: ${src}`);
+          // console.warn(`⚠️ 无法在HTTPS页面中加载HTTP内容: ${src}`);
           setError(true);
         }
       } else {

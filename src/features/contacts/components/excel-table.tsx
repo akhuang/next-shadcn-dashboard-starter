@@ -111,7 +111,7 @@ export default function ExcelTable({
       const textToCopy = headers + '\n' + rows;
       navigator.clipboard.writeText(textToCopy);
     } catch (error) {
-      console.error('复制失败:', error);
+      // ignore copy error
     }
   }, [contacts, columns]);
 

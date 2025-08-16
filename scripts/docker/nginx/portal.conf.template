@@ -7,6 +7,12 @@ upstream dashboard_app {
     keepalive 64;
 }
 
+# Plausible Analytics 上游服务器
+upstream plausible_analytics {
+    server plausible:8000;
+    keepalive 32;
+}
+
 # HTTP 服务器配置 - 仅用于重定向到 HTTPS
 server {
     listen 80;
@@ -119,6 +125,47 @@ server {
         # 禁用缓存
         proxy_cache_bypass $http_upgrade;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+    }
+
+    # ---- Plausible Analytics 分析服务 ----
+    location /analytics {
+        # 移除 /analytics 前缀并代理到 Plausible
+        rewrite ^/analytics(/.*)$ $1 break;
+        proxy_pass http://plausible_analytics;
+        
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        
+        # WebSocket 支持（用于实时仪表板）
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_cache_bypass $http_upgrade;
+        
+        # 设置较长的超时时间
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+    
+    # Plausible 追踪脚本
+    location = /js/script.js {
+        proxy_pass http://plausible_analytics/js/script.js;
+        proxy_set_header Host $host;
+        proxy_cache_valid 6h;
+        add_header Cache-Control "public, max-age=21600";
+    }
+    
+    # Plausible API 端点
+    location = /api/event {
+        proxy_pass http://plausible_analytics/api/event;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_buffering off;
     }
 
     # ---- HTTP站点代理：解决iframe混合内容限制 ----

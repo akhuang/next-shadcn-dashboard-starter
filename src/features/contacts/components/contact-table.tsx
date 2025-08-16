@@ -70,7 +70,7 @@ export default function ContactTable() {
         setData(result.data);
       }
     } catch (error) {
-      console.error('Error initializing folder:', error);
+      // ignore initialize error
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function ContactTable() {
 
     es.onopen = () => {
       setIsConnected(true);
-      console.log('SSE connected');
+      // SSE connected
     };
 
     es.onmessage = (event) => {
@@ -96,12 +96,11 @@ export default function ContactTable() {
         const newData = JSON.parse(event.data);
         setData(newData);
       } catch (error) {
-        console.error('Error parsing SSE data:', error);
+        // ignore bad event
       }
     };
 
-    es.onerror = (error) => {
-      console.error('SSE error:', error);
+    es.onerror = () => {
       setIsConnected(false);
     };
 

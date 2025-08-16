@@ -13,7 +13,9 @@ export default function GithubSignInButton() {
       className='w-full'
       variant='outline'
       type='button'
-      onClick={() => console.log('continue with github clicked')}
+      onClick={() => {
+        /* continue with github clicked */
+      }}
     >
       <Icons.github className='mr-2 h-4 w-4' />
       Continue with Github

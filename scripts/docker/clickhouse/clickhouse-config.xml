@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<clickhouse>
+    <logger>
+        <level>warning</level>
+        <console>true</console>
+    </logger>
+    
+    <!-- 停止昂贵的异步指标收集 -->
+    <asynchronous_metrics_update_period_s>86400</asynchronous_metrics_update_period_s>
+    
+    <!-- 停止系统日志 -->
+    <query_log remove="remove"/>
+    <query_thread_log remove="remove"/>
+    <text_log remove="remove"/>
+    <trace_log remove="remove"/>
+    <metric_log remove="remove"/>
+    <asynchronous_metric_log remove="remove"/>
+</clickhouse>

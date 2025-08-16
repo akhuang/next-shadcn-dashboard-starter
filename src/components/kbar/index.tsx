@@ -41,7 +41,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
           }
         })
         // eslint-disable-next-line no-console
-        .catch((err) => console.error('Failed to load contacts:', err));
+        .catch(() => {});
     }
   }, [pathname]);
 

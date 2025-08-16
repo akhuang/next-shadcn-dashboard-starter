@@ -45,8 +45,12 @@ scripts/
 # 复制环境配置模板
 cp env.example.txt .env.production
 
+# 对于 Docker 部署，还需要创建生产环境配置文件
+cp scripts/docker/.env.prod.example scripts/docker/.env.prod
+
 # 编辑生产环境变量
 vim .env.production
+vim scripts/docker/.env.prod
 ```
 
 ### 2. 更新 Next.js 配置
@@ -59,6 +63,14 @@ const baseConfig: NextConfig = {
   // ... 其他配置
 };
 ```
+
+#### 环境变量说明
+
+重要的环境变量包括：
+
+- **Clerk 认证**：`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 和 `CLERK_SECRET_KEY`
+- **Microsoft Clarity**：`NEXT_PUBLIC_CLARITY_PROJECT_ID`（可选，用于用户行为分析）
+- **Sentry 错误追踪**：`NEXT_PUBLIC_SENTRY_DSN`（可选）
 
 ### 3. 使用部署脚本
 
@@ -236,6 +248,66 @@ docker stats
 
 # 查看磁盘使用
 docker system df
+```
+
+### 自托管分析服务 (Plausible Analytics)
+
+项目集成了自托管的 Plausible Analytics，提供隐私友好的网站分析，无需 Cookie，符合 GDPR 要求。
+
+#### 启动分析服务
+
+```bash
+# 启动分析服务
+./scripts/deploy-analytics.sh --up
+
+# 初始化管理员账户
+./scripts/deploy-analytics.sh --init
+```
+
+#### 访问分析面板
+
+- 直接访问：http://localhost:8000
+- 通过主应用代理：https://your-domain/analytics
+- 默认管理员账户：admin@example.com / changeme123
+
+#### 功能特点
+
+- **隐私优先**：不使用 Cookie，不收集个人信息
+- **轻量级**：追踪脚本小于 1KB
+- **实时数据**：实时查看访问统计
+- **完全自托管**：数据存储在本地，不上传到外部服务器
+
+#### 配置说明
+
+在 `.env.prod` 中配置：
+
+```env
+# 网站域名
+NEXT_PUBLIC_SITE_DOMAIN=your-domain.com
+
+# Plausible 管理员配置
+PLAUSIBLE_ADMIN_EMAIL=admin@your-domain.com
+PLAUSIBLE_ADMIN_PASSWORD=secure-password
+PLAUSIBLE_SECRET_KEY=random-64-character-string
+```
+
+#### 管理命令
+
+```bash
+# 查看服务状态
+./scripts/deploy-analytics.sh --status
+
+# 查看日志
+./scripts/deploy-analytics.sh --logs
+
+# 重启服务
+./scripts/deploy-analytics.sh --restart
+
+# 停止服务
+./scripts/deploy-analytics.sh --down
+
+# 清理数据（谨慎使用）
+./scripts/deploy-analytics.sh --clean
 ```
 
 ### 备份和恢复

@@ -148,7 +148,7 @@ export default function ContactManager() {
         setData(result.data);
       }
     } catch (error) {
-      console.error('Error initializing folder:', error);
+      // ignore initialize error
     } finally {
       setLoading(false);
     }
@@ -171,7 +171,7 @@ export default function ContactManager() {
         const newData = JSON.parse(event.data);
         setData(newData);
       } catch (error) {
-        console.error('Error parsing SSE data:', error);
+        // ignore bad event
       }
     };
 

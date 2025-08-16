@@ -23,6 +23,8 @@ services:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
       - TZ=Asia/Shanghai
+      # Microsoft Clarity Analytics (Optional)
+      - NEXT_PUBLIC_CLARITY_PROJECT_ID=${NEXT_PUBLIC_CLARITY_PROJECT_ID}
     networks:
       - dashboard-network
     volumes:

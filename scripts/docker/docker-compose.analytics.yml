@@ -1,0 +1,101 @@
+version: '3.9'
+
+services:
+  # Plausible Analytics 自托管分析服务
+  plausible_db:
+    image: postgres:14-alpine
+    container_name: plausible-db
+    restart: unless-stopped
+    volumes:
+      - plausible-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${PLAUSIBLE_DB_PASSWORD:-plausible-db-password}
+    networks:
+      - dashboard-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  plausible_events_db:
+    image: clickhouse/clickhouse-server:23.3-alpine
+    container_name: plausible-events-db
+    restart: unless-stopped
+    volumes:
+      - plausible-events-db-data:/var/lib/clickhouse
+      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - dashboard-network
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  plausible:
+    image: plausible/analytics:v2
+    container_name: plausible-analytics
+    restart: unless-stopped
+    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    depends_on:
+      - plausible_db
+      - plausible_events_db
+    ports:
+      - "8000:8000"
+    environment:
+      # 基础配置
+      - BASE_URL=${PLAUSIBLE_BASE_URL:-http://localhost:8000}
+      - SECRET_KEY_BASE=${PLAUSIBLE_SECRET_KEY:-replace-me-with-a-random-64-char-string}
+      
+      # 数据库连接
+      - DATABASE_URL=postgres://postgres:${PLAUSIBLE_DB_PASSWORD:-plausible-db-password}@plausible_db:5432/plausible_db
+      - CLICKHOUSE_DATABASE_URL=http://plausible_events_db:8123/plausible_events_db
+      
+      # 禁用注册（仅管理员可创建账户）
+      - DISABLE_REGISTRATION=${PLAUSIBLE_DISABLE_REGISTRATION:-true}
+      
+      # 管理员账户（首次启动时创建）
+      - ADMIN_USER_EMAIL=${PLAUSIBLE_ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_USER_NAME=${PLAUSIBLE_ADMIN_NAME:-Admin}
+      - ADMIN_USER_PWD=${PLAUSIBLE_ADMIN_PASSWORD:-changeme123}
+      
+      # 邮件配置（可选）
+      - MAILER_ENABLED=${PLAUSIBLE_MAILER_ENABLED:-false}
+      # - SMTP_HOST_ADDR=${PLAUSIBLE_SMTP_HOST}
+      # - SMTP_HOST_PORT=${PLAUSIBLE_SMTP_PORT:-587}
+      # - SMTP_USER_NAME=${PLAUSIBLE_SMTP_USER}
+      # - SMTP_USER_PWD=${PLAUSIBLE_SMTP_PASSWORD}
+      # - SMTP_HOST_SSL_ENABLED=${PLAUSIBLE_SMTP_SSL:-true}
+      
+      # 性能配置
+      - MAXMIND_EDITION=${MAXMIND_EDITION:-GeoLite2-City}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+    networks:
+      - dashboard-network
+    volumes:
+      - plausible-data:/var/lib/plausible
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  plausible-db-data:
+    driver: local
+  plausible-events-db-data:
+    driver: local
+  plausible-data:
+    driver: local
+
+networks:
+  dashboard-network:
+    external: true

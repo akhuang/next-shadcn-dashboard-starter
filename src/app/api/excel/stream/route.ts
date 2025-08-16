@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
             encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
           );
         } catch (error) {
-          console.error('Error sending SSE:', error);
+          // swallow SSE delivery errors
         }
       };
 

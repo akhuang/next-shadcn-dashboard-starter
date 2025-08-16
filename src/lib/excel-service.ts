@@ -30,21 +30,23 @@ class ExcelService {
       path.join(this.folderPath, '**/*.{xlsx,xls,xlsm}'),
       {
         persistent: true,
-        ignoreInitial: true
+        ignoreInitial: true,
+        ignored: (watchedPath: string) => {
+          const base = path.basename(watchedPath);
+          // 忽略 Excel 临时文件和隐藏前缀文件
+          return base.startsWith('~$') || base.startsWith('._');
+        }
       }
     );
 
     this.watcher
-      .on('add', (filePath: string) => {
-        console.log(`File added: ${filePath}`);
+      .on('add', () => {
         this.loadAllExcelFiles();
       })
-      .on('change', (filePath: string) => {
-        console.log(`File changed: ${filePath}`);
+      .on('change', () => {
         this.loadAllExcelFiles();
       })
-      .on('unlink', (filePath: string) => {
-        console.log(`File removed: ${filePath}`);
+      .on('unlink', () => {
         this.loadAllExcelFiles();
       });
   }
@@ -70,7 +72,7 @@ class ExcelService {
           newSheetInfoMap[fileName] = result.sheetInfo;
         }
       } catch (error) {
-        console.error(`Error parsing file ${file}:`, error);
+        // swallow parse errors to keep stream alive
       }
     }
 
@@ -92,11 +94,14 @@ class ExcelService {
           if (stat.isDirectory()) {
             walk(fullPath);
           } else if (stat.isFile() && /\.(xlsx|xls|xlsm)$/i.test(item)) {
+            // 跳过 Excel 临时文件与隐藏前缀文件，如 "~$文件.xlsx"、"._文件.xlsx"
+            const base = path.basename(item);
+            if (base.startsWith('~$') || base.startsWith('._')) continue;
             files.push(fullPath);
           }
         }
       } catch (error) {
-        console.error(`Error reading directory ${currentDir}:`, error);
+        // ignore directory read errors
       }
     }
 
@@ -248,7 +253,6 @@ class ExcelService {
         };
       }
     } catch (error) {
-      console.error(`Error parsing Excel file ${filePath}:`, error);
       throw error;
     }
 
