@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,8 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { MergeRange, ExcelData } from '@/types/excel';
 import ExcelTable from './excel-table';
-import ContactSearchOverlay from './contact-search-overlay';
+// import ContactSearchOverlay from './contact-search-overlay'; // 不再使用遮罩层
+import ContactSearchResults from './contact-search-results';
 
 interface Contact {
   id: string;
@@ -107,7 +108,7 @@ export default function ContactWorkspace() {
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+  // const [showSearchOverlay, setShowSearchOverlay] = useState(false); // 不再需要遮罩层
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 使用防抖处理搜索查询
@@ -345,30 +346,21 @@ export default function ContactWorkspace() {
     }
   };
 
-  // 处理搜索结果选择
-  const handleSearchResultSelect = useCallback(
-    (fileName: string, sheetName: string) => {
-      setSelectedFile(fileName);
-      setSelectedSheet(sheetName);
-      setSearchQuery('');
-      setShowSearchOverlay(false);
-    },
-    []
-  );
-
-  // 监听搜索查询变化，自动打开/关闭遮罩层
-  useEffect(() => {
-    if (debouncedSearchQuery.trim()) {
-      setShowSearchOverlay(true);
-    } else {
-      setShowSearchOverlay(false);
-    }
-  }, [debouncedSearchQuery]);
+  // 处理搜索结果选择 - 不再需要，因为使用直接展示模式
+  // const handleSearchResultSelect = useCallback(
+  //   (fileName: string, sheetName: string) => {
+  //     setSelectedFile(fileName);
+  //     setSelectedSheet(sheetName);
+  //     setSearchQuery('');
+  //     setShowSearchOverlay(false);
+  //   },
+  //   []
+  // );
 
   return (
     <>
-      {/* 搜索结果遮罩层 */}
-      <ContactSearchOverlay
+      {/* 搜索结果遮罩层 - 已改为直接显示模式 */}
+      {/* <ContactSearchOverlay
         isOpen={showSearchOverlay}
         onClose={() => {
           setShowSearchOverlay(false);
@@ -377,7 +369,7 @@ export default function ContactWorkspace() {
         searchQuery={debouncedSearchQuery}
         searchResults={globalSearchResults}
         onSelectResult={handleSearchResultSelect}
-      />
+      /> */}
 
       <div className='bg-background flex h-full flex-col overflow-hidden'>
         {/* 顶部工具栏 */}
@@ -484,183 +476,200 @@ export default function ContactWorkspace() {
           </div>
         </div>
 
-        <div className='flex min-h-0 flex-1 overflow-hidden'>
-          {/* 左侧文件列表 */}
-          <div className='bg-muted/20 flex w-60 flex-shrink-0 flex-col overflow-hidden border-r'>
-            <div className='flex-shrink-0 border-b p-3'>
-              <h2 className='text-muted-foreground text-sm font-medium'>
-                数据目录
-              </h2>
-            </div>
-            <ScrollArea className='flex-1 overflow-y-auto'>
-              <div className='space-y-1 p-2'>
-                {fileDataList.map((fileData) => {
-                  const {
-                    icon: FileIcon,
-                    color,
-                    bgColor,
-                    hoverColor
-                  } = getFileConfig(fileData.fileName);
-                  const isSelected = selectedFile === fileData.fileName;
-
-                  return (
-                    <Button
-                      key={fileData.fileName}
-                      variant='ghost'
-                      className={cn(
-                        'h-auto w-full cursor-pointer justify-start p-2 font-normal transition-all [&>*]:min-w-0',
-                        hoverColor,
-                        isSelected && 'bg-accent shadow-sm'
-                      )}
-                      onClick={() => selectFile(fileData.fileName)}
-                    >
-                      <div
-                        className={cn(
-                          'mr-2 flex-shrink-0 rounded-md p-1.5',
-                          bgColor
-                        )}
-                      >
-                        <FileIcon className={cn('h-4 w-4', color)} />
-                      </div>
-                      <div className='w-0 min-w-0 flex-1 overflow-hidden text-left'>
-                        <div
-                          className='truncate text-sm font-medium'
-                          title={fileData.displayName}
-                        >
-                          {fileData.displayName}
-                        </div>
-                        <div className='text-muted-foreground truncate text-xs'>
-                          {fileData.sheets.length} 个分类 ·{' '}
-                          {fileData.totalContacts} 条记录
-                        </div>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
-            </ScrollArea>
+        {/* 根据是否有搜索来决定显示内容 */}
+        {debouncedSearchQuery.trim() ? (
+          // 搜索结果视图
+          <div className='flex-1 overflow-auto p-4'>
+            <ContactSearchResults
+              searchQuery={debouncedSearchQuery}
+              searchResults={globalSearchResults}
+              isSearching={searchQuery !== debouncedSearchQuery}
+              onClose={() => setSearchQuery('')}
+            />
           </div>
+        ) : (
+          // 原有的文件浏览视图
+          <div className='flex min-h-0 flex-1 overflow-hidden'>
+            {/* 左侧文件列表 */}
+            <div className='bg-muted/20 flex w-60 flex-shrink-0 flex-col overflow-hidden border-r'>
+              <div className='flex-shrink-0 border-b p-3'>
+                <h2 className='text-muted-foreground text-sm font-medium'>
+                  数据目录
+                </h2>
+              </div>
+              <ScrollArea className='flex-1 overflow-y-auto'>
+                <div className='space-y-1 p-2'>
+                  {fileDataList.map((fileData) => {
+                    const {
+                      icon: FileIcon,
+                      color,
+                      bgColor,
+                      hoverColor
+                    } = getFileConfig(fileData.fileName);
+                    const isSelected = selectedFile === fileData.fileName;
 
-          {/* 右侧内容区 */}
-          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-            {/* Sheet Tab区域 */}
-            {currentFileData && (
-              <Tabs
-                value={selectedSheet}
-                onValueChange={setSelectedSheet}
-                className='flex min-w-0 flex-1 flex-col overflow-hidden'
-              >
-                <div className='bg-background/50 flex items-center border-b'>
-                  <div className='flex-1 overflow-x-auto'>
-                    <TabsList className='h-auto justify-start rounded-none bg-transparent p-1'>
-                      <div className='flex gap-1 p-2'>
-                        {currentFileData.sheets.map((sheet) => (
-                          <TabsTrigger
-                            key={sheet.name}
-                            value={sheet.name}
-                            className='data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary max-w-[200px] shrink-0 cursor-pointer border-b-2 border-transparent px-3 py-2 text-sm font-medium data-[state=active]:shadow-sm'
+                    return (
+                      <Button
+                        key={fileData.fileName}
+                        variant='ghost'
+                        className={cn(
+                          'h-auto w-full cursor-pointer justify-start p-2 font-normal transition-all [&>*]:min-w-0',
+                          hoverColor,
+                          isSelected && 'bg-accent shadow-sm'
+                        )}
+                        onClick={() => selectFile(fileData.fileName)}
+                      >
+                        <div
+                          className={cn(
+                            'mr-2 flex-shrink-0 rounded-md p-1.5',
+                            bgColor
+                          )}
+                        >
+                          <FileIcon className={cn('h-4 w-4', color)} />
+                        </div>
+                        <div className='w-0 min-w-0 flex-1 overflow-hidden text-left'>
+                          <div
+                            className='truncate text-sm font-medium'
+                            title={fileData.displayName}
                           >
-                            <span className='block truncate' title={sheet.name}>
-                              {sheet.name}
-                            </span>
-                            <Badge
-                              variant='secondary'
-                              className='ml-1.5 min-w-[1.2rem] justify-center px-1 py-0 text-xs'
-                            >
-                              {sheet.contacts.length}
-                            </Badge>
-                          </TabsTrigger>
-                        ))}
-                      </div>
-                    </TabsList>
-                  </div>
-                  <div className='flex flex-shrink-0 items-center gap-1 px-2'>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='h-8 w-8'
-                      onClick={() => {
-                        const currentSheet = currentFileData.sheets.find(
-                          (s) => s.name === selectedSheet
-                        );
-                        if (!currentSheet || displayContacts.length === 0)
-                          return;
-
-                        try {
-                          const headers = currentSheet.columns.join('\t');
-                          const rows = displayContacts
-                            .map((contact) =>
-                              currentSheet.columns
-                                .map((col) => contact.rowData[col] || '')
-                                .join('\t')
-                            )
-                            .join('\n');
-
-                          const textToCopy = headers + '\n' + rows;
-                          navigator.clipboard.writeText(textToCopy);
-                        } catch (error) {
-                          console.error('复制失败:', error);
-                        }
-                      }}
-                      title='复制数据'
-                      disabled={displayContacts.length === 0}
-                    >
-                      <Copy className='h-4 w-4' />
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='h-8 w-8'
-                      onClick={exportToCSV}
-                      title='导出 CSV'
-                      disabled={displayContacts.length === 0}
-                    >
-                      <Download className='h-4 w-4' />
-                    </Button>
-                  </div>
+                            {fileData.displayName}
+                          </div>
+                          <div className='text-muted-foreground truncate text-xs'>
+                            {fileData.sheets.length} 个分类 ·{' '}
+                            {fileData.totalContacts} 条记录
+                          </div>
+                        </div>
+                      </Button>
+                    );
+                  })}
                 </div>
+              </ScrollArea>
+            </div>
 
-                {currentFileData.sheets.map((sheet) => (
-                  <TabsContent
-                    key={sheet.name}
-                    value={sheet.name}
-                    className='mt-0 min-h-0 min-w-0 flex-1 overflow-hidden overflow-x-auto data-[state=active]:flex'
-                  >
-                    {selectedSheet === sheet.name && (
-                      <ExcelTable
-                        contacts={displayContacts}
-                        columns={
-                          searchQuery
-                            ? Array.from(
-                                new Set(
-                                  displayContacts.flatMap((c) =>
-                                    Object.keys(c.rowData)
+            {/* 右侧内容区 */}
+            <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+              {/* Sheet Tab区域 */}
+              {currentFileData && (
+                <Tabs
+                  value={selectedSheet}
+                  onValueChange={setSelectedSheet}
+                  className='flex min-w-0 flex-1 flex-col overflow-hidden'
+                >
+                  <div className='bg-background/50 flex items-center border-b'>
+                    <div className='flex-1 overflow-x-auto'>
+                      <TabsList className='h-auto justify-start rounded-none bg-transparent p-1'>
+                        <div className='flex gap-1 p-2'>
+                          {currentFileData.sheets.map((sheet) => (
+                            <TabsTrigger
+                              key={sheet.name}
+                              value={sheet.name}
+                              className='data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary max-w-[200px] shrink-0 cursor-pointer border-b-2 border-transparent px-3 py-2 text-sm font-medium data-[state=active]:shadow-sm'
+                            >
+                              <span
+                                className='block truncate'
+                                title={sheet.name}
+                              >
+                                {sheet.name}
+                              </span>
+                              <Badge
+                                variant='secondary'
+                                className='ml-1.5 min-w-[1.2rem] justify-center px-1 py-0 text-xs'
+                              >
+                                {sheet.contacts.length}
+                              </Badge>
+                            </TabsTrigger>
+                          ))}
+                        </div>
+                      </TabsList>
+                    </div>
+                    <div className='flex flex-shrink-0 items-center gap-1 px-2'>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-8 w-8'
+                        onClick={() => {
+                          const currentSheet = currentFileData.sheets.find(
+                            (s) => s.name === selectedSheet
+                          );
+                          if (!currentSheet || displayContacts.length === 0)
+                            return;
+
+                          try {
+                            const headers = currentSheet.columns.join('\t');
+                            const rows = displayContacts
+                              .map((contact) =>
+                                currentSheet.columns
+                                  .map((col) => contact.rowData[col] || '')
+                                  .join('\t')
+                              )
+                              .join('\n');
+
+                            const textToCopy = headers + '\n' + rows;
+                            navigator.clipboard.writeText(textToCopy);
+                          } catch (error) {
+                            console.error('复制失败:', error);
+                          }
+                        }}
+                        title='复制数据'
+                        disabled={displayContacts.length === 0}
+                      >
+                        <Copy className='h-4 w-4' />
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-8 w-8'
+                        onClick={exportToCSV}
+                        title='导出 CSV'
+                        disabled={displayContacts.length === 0}
+                      >
+                        <Download className='h-4 w-4' />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {currentFileData.sheets.map((sheet) => (
+                    <TabsContent
+                      key={sheet.name}
+                      value={sheet.name}
+                      className='mt-0 min-h-0 min-w-0 flex-1 overflow-hidden overflow-x-auto data-[state=active]:flex'
+                    >
+                      {selectedSheet === sheet.name && (
+                        <ExcelTable
+                          contacts={displayContacts}
+                          columns={
+                            searchQuery
+                              ? Array.from(
+                                  new Set(
+                                    displayContacts.flatMap((c) =>
+                                      Object.keys(c.rowData)
+                                    )
                                   )
                                 )
-                              )
-                            : sheet.columns
-                        }
-                        onExport={exportToCSV}
-                        mergeRanges={sheet.mergeRanges || []}
-                        enableAutoMerge={false}
-                      />
-                    )}
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
+                              : sheet.columns
+                          }
+                          onExport={exportToCSV}
+                          mergeRanges={sheet.mergeRanges || []}
+                          enableAutoMerge={false}
+                        />
+                      )}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              )}
 
-            {/* 空状态 */}
-            {!currentFileData && (
-              <div className='flex flex-1 items-center justify-center'>
-                <div className='text-muted-foreground text-center'>
-                  <Folder className='mx-auto mb-4 h-12 w-12 opacity-50' />
-                  <p>选择一个数据目录开始查看</p>
+              {/* 空状态 */}
+              {!currentFileData && (
+                <div className='flex flex-1 items-center justify-center'>
+                  <div className='text-muted-foreground text-center'>
+                    <Folder className='mx-auto mb-4 h-12 w-12 opacity-50' />
+                    <p>选择一个数据目录开始查看</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );
