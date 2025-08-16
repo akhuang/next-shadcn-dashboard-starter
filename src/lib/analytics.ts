@@ -83,7 +83,12 @@ export function trackSearch(query: string) {
  * @param context 错误上下文
  */
 export function trackError(error: string, context?: string) {
-  trackEvent('Error', { error, context });
+  // Avoid passing undefined to props (trackEvent expects string | number | boolean)
+  const props: Record<string, string | number | boolean> = { error };
+  if (typeof context === 'string' && context.length > 0) {
+    props.context = context;
+  }
+  trackEvent('Error', props);
 }
 
 /**

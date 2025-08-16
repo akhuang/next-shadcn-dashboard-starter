@@ -13,8 +13,11 @@ export function PlausibleAnalytics({
   selfHosted = false,
   scriptPath = '/js/script.js'
 }: PlausibleProps) {
+  // window is not available during SSR; compute safely
   const siteDomain =
-    domain || process.env.NEXT_PUBLIC_SITE_DOMAIN || window.location.hostname;
+    domain ||
+    process.env.NEXT_PUBLIC_SITE_DOMAIN ||
+    (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
   const isEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED !== 'false';
 
   if (!isEnabled) {

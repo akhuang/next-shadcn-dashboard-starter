@@ -108,6 +108,7 @@ export default function ContactWorkspace() {
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 使用防抖处理搜索查询
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -270,6 +271,7 @@ export default function ContactWorkspace() {
       const result = await response.json();
       if (result.success) {
         setData(result.data);
+        setSettingsOpen(false);
       }
     } catch (error) {
       // ignore initialize error
@@ -445,27 +447,34 @@ export default function ContactWorkspace() {
                   className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
                 />
               </Button>
-              <Dialog>
+              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <DialogTrigger asChild>
                   <Button variant='ghost' size='sm' className='cursor-pointer'>
                     <Settings className='h-4 w-4' />
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className='w-[92vw] max-w-[520px] sm:max-w-[520px]'>
                   <DialogHeader>
                     <DialogTitle>设置监控文件夹</DialogTitle>
                   </DialogHeader>
                   <div className='space-y-4'>
-                    <div>
-                      <Label htmlFor='folderPath'>文件夹路径</Label>
+                    <div className='space-y-2'>
+                      <Label htmlFor='folderPath' className='block'>
+                        文件夹路径
+                      </Label>
                       <Input
                         id='folderPath'
                         value={folderPath}
                         onChange={(e) => setFolderPath(e.target.value)}
                         placeholder='/path/to/excel/folder'
+                        className='w-full'
                       />
                     </div>
-                    <Button onClick={initializeFolder} className='w-full'>
+                    <Button
+                      onClick={initializeFolder}
+                      className='w-full'
+                      disabled={loading || !folderPath}
+                    >
                       确认设置
                     </Button>
                   </div>
@@ -480,7 +489,7 @@ export default function ContactWorkspace() {
           <div className='bg-muted/20 flex w-60 flex-shrink-0 flex-col overflow-hidden border-r'>
             <div className='flex-shrink-0 border-b p-3'>
               <h2 className='text-muted-foreground text-sm font-medium'>
-                数据源
+                数据目录
               </h2>
             </div>
             <ScrollArea className='flex-1 overflow-y-auto'>
@@ -646,7 +655,7 @@ export default function ContactWorkspace() {
               <div className='flex flex-1 items-center justify-center'>
                 <div className='text-muted-foreground text-center'>
                   <Folder className='mx-auto mb-4 h-12 w-12 opacity-50' />
-                  <p>选择一个数据源开始查看</p>
+                  <p>选择一个数据目录开始查看</p>
                 </div>
               </div>
             )}
