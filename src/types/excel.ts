@@ -19,11 +19,12 @@ export interface SheetInfo {
   contacts: Contact[];
   columns: string[];
   mergeRanges: MergeRange[]; // Sheet的合并单元格信息
+  title?: string; // 顶部合并的大标题（如有）
 }
 
 export interface ExcelData {
   contacts: Contact[];
   lastUpdated: Date;
   files: string[];
-  sheetInfoMap?: Record<string, SheetInfo>; // fileName -> sheetName -> SheetInfo
+  sheetInfoMap?: Record<string, Record<string, SheetInfo>>; // fileName -> sheetName -> SheetInfo
 }

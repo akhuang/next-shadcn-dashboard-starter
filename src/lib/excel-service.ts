@@ -128,6 +128,21 @@ class ExcelService {
         const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
         const merges = worksheet['!merges'] || [];
 
+        // 检测第一行是否存在横向合并的大标题
+        let sheetTitle: string | undefined = undefined;
+        const firstRowMerges = (merges || []).filter(
+          (m: any) => m.s.r === 0 && m.e.r === 0 && m.e.c > m.s.c
+        );
+        if (firstRowMerges.length > 0) {
+          const m = firstRowMerges[0];
+          const v = (
+            worksheet[XLSX.utils.encode_cell({ r: m.s.r, c: m.s.c })] || {}
+          ).v;
+          if (v && String(v).trim() !== '') {
+            sheetTitle = String(v);
+          }
+        }
+
         // 转换合并单元格信息为我们的格式
         const mergeRanges: MergeRange[] = merges.map((merge: any) => ({
           startRow: merge.s.r,
@@ -140,30 +155,53 @@ class ExcelService {
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {
           header: 1,
           defval: '',
-          blankrows: false,
+          blankrows: true,
           raw: false
         });
 
         // 处理合并单元格
-        const processedData = this.processMergedCells(
+        const processedDataAll = this.processMergedCells(
           jsonData as any[][],
           merges
         );
+        // 保留第一行作为数据（包括横向合并的大标题），不再剔除
+        const processedData = processedDataAll as any[][];
 
-        // 假设第一行是标题
-        const headers = processedData[0] || [];
+        // 表头处理：若首行有大范围合并或有效表头过少，则回退为列字母
+        const rawHeaders = (processedData[0] || []) as any[];
+        const totalColsByRange = range.e.c - range.s.c + 1;
+        const maxColsByRows = processedData.reduce(
+          (m, r) => Math.max(m, r?.length || 0),
+          0
+        );
+        const totalCols = Math.max(totalColsByRange, maxColsByRows);
+        const nonEmptyHeaderCount = rawHeaders.filter(
+          (h) => String(h ?? '').trim() !== ''
+        ).length;
+        // 首行存在任何横向/纵向合并都视为“非标准表头”，回退到列字母
+        const headerRowHasMerge = (merges || []).some(
+          (m: any) => m.s.r === 0 || m.e.r === 0
+        );
+        const colLetters = Array.from({ length: totalCols }, (_, i) =>
+          XLSX.utils.encode_col(range.s.c + i)
+        );
+        const useLettersAsHeaders =
+          headerRowHasMerge || nonEmptyHeaderCount <= 1;
+        const headers = useLettersAsHeaders
+          ? colLetters
+          : rawHeaders.map((h, i) =>
+              String(h ?? '').trim() !== '' ? String(h) : colLetters[i]
+            );
         const sheetContacts: Contact[] = [];
 
-        // 从第二行开始处理数据
-        for (let i = 1; i < processedData.length; i++) {
-          const row = processedData[i];
-          if (!row || row.every((cell: any) => !cell)) continue;
-
+        // 确定数据起始行：若使用列字母作为表头，则首行即为数据；否则首行作为表头，从第二行开始
+        const dataStartIndex = useLettersAsHeaders ? 0 : 1;
+        for (let i = dataStartIndex; i < processedData.length; i++) {
+          const row = processedData[i] || [];
           const rowData: Record<string, any> = {};
           headers.forEach((header: any, index: number) => {
-            if (header) {
-              rowData[String(header)] = row[index] || '';
-            }
+            rowData[String(header)] =
+              (row && row[index] !== undefined ? row[index] : '') || '';
           });
 
           // 创建可搜索文本
@@ -178,7 +216,7 @@ class ExcelService {
             sheetName,
             rowData,
             searchableText,
-            rowIndex: i - 1 // 数据行的索引（不包括标题行）
+            rowIndex: i - dataStartIndex // 数据行索引（不包括表头）
           };
           contacts.push(contact);
           sheetContacts.push(contact);
@@ -186,23 +224,27 @@ class ExcelService {
 
         // 保存sheet信息
         // 注意：我们传递的是相对于数据行的索引（不包括标题行）
-        // 因为contacts数组不包含标题行，索引需要减1
+        // 需要减去：表头行（若未使用列字母）。由于不再剔除第一行标题，removedTopRows=0
+        const headerConsumedRows = useLettersAsHeaders ? 0 : 1;
+        const subtractRows = headerConsumedRows;
+
         const adjustedMergeRanges = mergeRanges
-          .filter((range) => range.endRow > 0) // 只保留涉及数据行的合并
+          .filter((range) => range.endRow >= subtractRows) // 只保留涉及数据行的合并
           .map((range) => ({
-            // 调整为数据行的索引（减去标题行）
-            startRow: range.startRow - 1,
-            endRow: range.endRow - 1,
+            // 调整为数据行的索引
+            startRow: range.startRow - subtractRows,
+            endRow: range.endRow - subtractRows,
             startCol: range.startCol,
             endCol: range.endCol
           }))
-          .filter((range) => range.startRow >= 0); // 过滤掉完全在标题行的合并
+          .filter((range) => range.startRow >= 0); // 过滤掉被剔除行中的合并
 
         sheetInfo[sheetName] = {
           name: sheetName,
           contacts: sheetContacts,
-          columns: headers.filter((h) => h).map(String),
-          mergeRanges: adjustedMergeRanges
+          columns: headers.map(String),
+          mergeRanges: adjustedMergeRanges,
+          title: sheetTitle
         };
       }
     } catch (error) {

@@ -126,7 +126,7 @@ export default function ExcelTable({
           >
             <thead className='bg-gray-50'>
               <tr>
-                <th className='sticky left-0 z-10 min-w-[3rem] border border-gray-300 bg-gray-50 px-3 py-2 text-left text-sm font-semibold'>
+                <th className='sticky left-0 z-10 w-[3.5rem] max-w-[3.5rem] border border-gray-300 bg-gray-50 px-3 py-2 text-left text-sm font-semibold'>
                   #
                 </th>
                 {columns.map((column, index) => (
@@ -142,7 +142,7 @@ export default function ExcelTable({
             <tbody>
               {contacts.map((contact, rowIndex) => (
                 <tr key={contact.id} className='hover:bg-gray-50'>
-                  <td className='sticky left-0 z-10 border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-500'>
+                  <td className='sticky left-0 z-10 w-[3.5rem] max-w-[3.5rem] border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-500'>
                     {rowIndex + 1}
                   </td>
                   {columns.map((column, colIndex) => {
