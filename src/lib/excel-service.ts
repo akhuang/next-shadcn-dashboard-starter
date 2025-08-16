@@ -185,19 +185,24 @@ class ExcelService {
         }
 
         // 保存sheet信息
+        // 注意：我们传递的是相对于数据行的索引（不包括标题行）
+        // 因为contacts数组不包含标题行，索引需要减1
+        const adjustedMergeRanges = mergeRanges
+          .filter((range) => range.endRow > 0) // 只保留涉及数据行的合并
+          .map((range) => ({
+            // 调整为数据行的索引（减去标题行）
+            startRow: range.startRow - 1,
+            endRow: range.endRow - 1,
+            startCol: range.startCol,
+            endCol: range.endCol
+          }))
+          .filter((range) => range.startRow >= 0); // 过滤掉完全在标题行的合并
+
         sheetInfo[sheetName] = {
           name: sheetName,
           contacts: sheetContacts,
           columns: headers.filter((h) => h).map(String),
-          mergeRanges: mergeRanges
-            .map((range) => ({
-              // 调整为数据行的索引（减去标题行）
-              startRow: Math.max(0, range.startRow - 1),
-              endRow: Math.max(0, range.endRow - 1),
-              startCol: range.startCol,
-              endCol: range.endCol
-            }))
-            .filter((range) => range.startRow >= 0) // 过滤掉标题行的合并
+          mergeRanges: adjustedMergeRanges
         };
       }
     } catch (error) {
