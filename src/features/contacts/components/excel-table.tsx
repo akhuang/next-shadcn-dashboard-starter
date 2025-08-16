@@ -5,21 +5,7 @@ import '@/styles/excel-table.css';
 import { Button } from '@/components/ui/button';
 import { Download, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Contact {
-  id: string;
-  fileName: string;
-  sheetName: string;
-  rowData: Record<string, any>;
-  searchableText: string;
-}
-
-interface MergeRange {
-  startRow: number;
-  endRow: number;
-  startCol: number;
-  endCol: number;
-}
+import { Contact, MergeRange } from '@/types/excel';
 
 interface ExcelTableProps {
   contacts: Contact[];

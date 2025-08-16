@@ -29,6 +29,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
+import { MergeRange } from '@/types/excel';
 import ExcelTable from './excel-table';
 import ContactSearchOverlay from './contact-search-overlay';
 
@@ -53,6 +54,7 @@ interface FileData {
     name: string;
     contacts: Contact[];
     columns: string[];
+    mergeRanges?: MergeRange[];
   }>;
   icon: any;
   color: string;
@@ -141,7 +143,8 @@ export default function ContactWorkspace() {
         sheet = {
           name: contact.sheetName,
           contacts: [],
-          columns: []
+          columns: [],
+          mergeRanges: []
         };
         fileData.sheets.push(sheet);
       }
@@ -150,7 +153,7 @@ export default function ContactWorkspace() {
       fileData.totalContacts++;
     });
 
-    // 计算每个Sheet的列
+    // 计算每个Sheet的列和合并信息
     filesMap.forEach((fileData) => {
       fileData.sheets.forEach((sheet) => {
         const columnsSet = new Set<string>();
@@ -158,11 +161,19 @@ export default function ContactWorkspace() {
           Object.keys(contact.rowData).forEach((key) => columnsSet.add(key));
         });
         sheet.columns = Array.from(columnsSet);
+
+        // 从 sheetInfoMap 获取合并信息
+        if (data.sheetInfoMap && data.sheetInfoMap[fileData.fileName]) {
+          const sheetInfo = data.sheetInfoMap[fileData.fileName][sheet.name];
+          if (sheetInfo && sheetInfo.mergeRanges) {
+            sheet.mergeRanges = sheetInfo.mergeRanges;
+          }
+        }
       });
     });
 
     return Array.from(filesMap.values());
-  }, [data.contacts]);
+  }, [data.contacts, data.sheetInfoMap]);
 
   // 当前选中文件的数据
   const currentFileData = useMemo(() => {
@@ -627,7 +638,8 @@ export default function ContactWorkspace() {
                             : sheet.columns
                         }
                         onExport={exportToCSV}
-                        enableAutoMerge={true}
+                        mergeRanges={sheet.mergeRanges || []}
+                        enableAutoMerge={false}
                       />
                     )}
                   </TabsContent>
