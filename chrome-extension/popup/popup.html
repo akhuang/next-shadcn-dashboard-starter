@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>联系人查询助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- 标题栏 -->
+    <header class="popup-header">
+      <div class="popup-logo">
+        <span class="popup-icon">📇</span>
+        <h1 class="popup-title">联系人查询助手</h1>
+      </div>
+      <div class="popup-version">v1.0.0</div>
+    </header>
+
+    <!-- 搜索栏 -->
+    <div class="popup-search">
+      <input 
+        type="text" 
+        id="searchInput" 
+        class="popup-search-input" 
+        placeholder="输入姓名、电话或邮箱..."
+        autofocus
+      />
+      <button id="searchBtn" class="popup-search-btn">
+        <span class="search-icon">🔍</span>
+      </button>
+    </div>
+
+    <!-- 快捷操作 -->
+    <div class="popup-quick-actions">
+      <button id="openSidebarBtn" class="quick-action-btn">
+        <span class="action-icon">📋</span>
+        <span class="action-text">打开侧边栏</span>
+      </button>
+      <button id="detectTablesBtn" class="quick-action-btn">
+        <span class="action-icon">📊</span>
+        <span class="action-text">检测表格</span>
+      </button>
+      <button id="batchSearchBtn" class="quick-action-btn">
+        <span class="action-icon">🔄</span>
+        <span class="action-text">批量查询</span>
+      </button>
+    </div>
+
+    <!-- 搜索历史 -->
+    <div class="popup-section">
+      <div class="section-header">
+        <h3 class="section-title">最近搜索</h3>
+        <button id="clearHistoryBtn" class="section-action">清除</button>
+      </div>
+      <div id="historyList" class="history-list">
+        <div class="empty-state">暂无搜索记录</div>
+      </div>
+    </div>
+
+    <!-- 收藏联系人 -->
+    <div class="popup-section">
+      <div class="section-header">
+        <h3 class="section-title">收藏联系人</h3>
+        <button id="viewAllFavoritesBtn" class="section-action">查看全部</button>
+      </div>
+      <div id="favoritesList" class="favorites-list">
+        <div class="empty-state">暂无收藏</div>
+      </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="popup-stats">
+      <div class="stat-item">
+        <span class="stat-label">总查询</span>
+        <span id="totalSearches" class="stat-value">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">成功率</span>
+        <span id="successRate" class="stat-value">0%</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">今日查询</span>
+        <span id="todaySearches" class="stat-value">0</span>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <footer class="popup-footer">
+      <button id="settingsBtn" class="footer-btn">
+        <span class="footer-icon">⚙️</span>
+        <span>设置</span>
+      </button>
+      <button id="helpBtn" class="footer-btn">
+        <span class="footer-icon">❓</span>
+        <span>帮助</span>
+      </button>
+      <button id="exportBtn" class="footer-btn">
+        <span class="footer-icon">💾</span>
+        <span>导出</span>
+      </button>
+    </footer>
+
+    <!-- 连接状态 -->
+    <div id="connectionStatus" class="connection-status">
+      <span class="status-dot"></span>
+      <span class="status-text">未连接</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

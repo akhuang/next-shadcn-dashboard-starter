@@ -1,0 +1,433 @@
+/* Chrome Extension 样式 */
+
+/* 基础变量 */
+:root {
+  --crm-primary: #2563eb;
+  --crm-primary-hover: #1d4ed8;
+  --crm-success: #10b981;
+  --crm-warning: #f59e0b;
+  --crm-error: #ef4444;
+  --crm-text: #1f2937;
+  --crm-text-secondary: #6b7280;
+  --crm-border: #e5e7eb;
+  --crm-bg: #ffffff;
+  --crm-bg-secondary: #f9fafb;
+  --crm-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --crm-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 悬浮按钮 */
+.crm-floating-button {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--crm-primary);
+  color: white;
+  border-radius: 20px;
+  box-shadow: var(--crm-shadow);
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: pointer;
+  z-index: 999999;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.crm-floating-button-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.crm-floating-button:hover {
+  background: var(--crm-primary-hover);
+  transform: scale(1.05);
+}
+
+.crm-floating-button-icon {
+  font-size: 16px;
+}
+
+.crm-floating-button-loading {
+  background: var(--crm-warning);
+  pointer-events: none;
+}
+
+.crm-floating-button-error {
+  background: var(--crm-error);
+}
+
+/* 侧边栏 */
+.crm-sidebar {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100vh;
+  background: var(--crm-bg);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 999998;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.crm-sidebar-visible {
+  right: 0;
+}
+
+.crm-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--crm-border);
+  background: var(--crm-bg-secondary);
+}
+
+.crm-sidebar-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--crm-text);
+}
+
+.crm-sidebar-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  color: var(--crm-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.crm-sidebar-close:hover {
+  background: var(--crm-border);
+  color: var(--crm-text);
+}
+
+/* 搜索栏 */
+.crm-sidebar-search {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--crm-border);
+}
+
+.crm-sidebar-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--crm-border);
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.crm-sidebar-search-input:focus {
+  border-color: var(--crm-primary);
+}
+
+.crm-sidebar-search-button {
+  padding: 8px 16px;
+  background: var(--crm-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.crm-sidebar-search-button:hover {
+  background: var(--crm-primary-hover);
+}
+
+/* 筛选器 */
+.crm-sidebar-filters {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--crm-border);
+  background: var(--crm-bg-secondary);
+}
+
+.crm-sidebar-filter-type {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--crm-border);
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+}
+
+.crm-sidebar-filter-clear {
+  padding: 6px 12px;
+  background: white;
+  color: var(--crm-text-secondary);
+  border: 1px solid var(--crm-border);
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crm-sidebar-filter-clear:hover {
+  background: var(--crm-bg-secondary);
+}
+
+/* 结果区域 */
+.crm-sidebar-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.crm-sidebar-results-empty {
+  text-align: center;
+  color: var(--crm-text-secondary);
+  padding: 40px 20px;
+}
+
+.crm-sidebar-results-count {
+  color: var(--crm-text-secondary);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.crm-sidebar-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 结果项 */
+.crm-sidebar-result-item {
+  padding: 12px;
+  background: var(--crm-bg-secondary);
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.crm-sidebar-result-item:hover {
+  box-shadow: var(--crm-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.crm-sidebar-result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.crm-sidebar-result-name {
+  font-weight: 600;
+  color: var(--crm-text);
+  font-size: 15px;
+}
+
+.crm-sidebar-result-title {
+  color: var(--crm-text-secondary);
+  font-size: 13px;
+  padding: 2px 6px;
+  background: white;
+  border-radius: 4px;
+}
+
+.crm-sidebar-result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--crm-text-secondary);
+}
+
+.crm-sidebar-result-dept,
+.crm-sidebar-result-phone,
+.crm-sidebar-result-email {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-sidebar-result-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.crm-sidebar-result-copy,
+.crm-sidebar-result-copy-all {
+  padding: 4px 8px;
+  background: white;
+  color: var(--crm-text);
+  border: 1px solid var(--crm-border);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crm-sidebar-result-copy:hover,
+.crm-sidebar-result-copy-all:hover {
+  background: var(--crm-primary);
+  color: white;
+  border-color: var(--crm-primary);
+}
+
+/* 底部栏 */
+.crm-sidebar-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid var(--crm-border);
+  background: var(--crm-bg-secondary);
+}
+
+.crm-sidebar-status {
+  color: var(--crm-text-secondary);
+  font-size: 13px;
+}
+
+.crm-sidebar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.crm-sidebar-export,
+.crm-sidebar-settings {
+  padding: 6px 12px;
+  background: white;
+  color: var(--crm-text);
+  border: 1px solid var(--crm-border);
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crm-sidebar-export:hover,
+.crm-sidebar-settings:hover {
+  background: var(--crm-primary);
+  color: white;
+  border-color: var(--crm-primary);
+}
+
+/* 加载状态 */
+.crm-sidebar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.crm-sidebar-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--crm-border);
+  border-top-color: var(--crm-primary);
+  border-radius: 50%;
+  animation: crm-spin 0.8s linear infinite;
+}
+
+.crm-sidebar-loading-text {
+  margin-top: 12px;
+  color: var(--crm-text-secondary);
+  font-size: 14px;
+}
+
+@keyframes crm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 进度条 */
+.crm-sidebar-progress {
+  width: 100px;
+  height: 4px;
+  background: var(--crm-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.crm-sidebar-progress-bar {
+  height: 100%;
+  background: var(--crm-primary);
+  transition: width 0.3s ease;
+}
+
+.crm-sidebar-progress-text {
+  font-size: 12px;
+  color: var(--crm-text-secondary);
+  margin-left: 8px;
+}
+
+/* 错误状态 */
+.crm-sidebar-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+}
+
+.crm-sidebar-error-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.crm-sidebar-error-message {
+  color: var(--crm-error);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 高亮样式 */
+.crm-highlight {
+  background: yellow;
+  padding: 2px;
+  border-radius: 2px;
+}
+
+.crm-detectable-table {
+  position: relative;
+  box-shadow: 0 0 0 2px var(--crm-primary);
+}
+
+.crm-enhanced-column {
+  background: var(--crm-bg-secondary);
+  font-weight: 600;
+}
+
+.crm-enhanced-cell {
+  background: var(--crm-bg-secondary);
+  font-size: 13px;
+  padding: 8px;
+}
+
+.crm-no-match {
+  color: var(--crm-text-secondary);
+  font-style: italic;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .crm-sidebar {
+    width: 100%;
+    right: -100%;
+  }
+}

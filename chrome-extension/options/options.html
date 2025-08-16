@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>联系人查询助手 - 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <!-- 侧边栏导航 -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">📇</span>
+        <h1>联系人查询助手</h1>
+      </div>
+      
+      <ul class="nav-menu">
+        <li class="nav-item active" data-tab="general">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-text">常规设置</span>
+        </li>
+        <li class="nav-item" data-tab="api">
+          <span class="nav-icon">🔌</span>
+          <span class="nav-text">API 配置</span>
+        </li>
+        <li class="nav-item" data-tab="display">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-text">显示设置</span>
+        </li>
+        <li class="nav-item" data-tab="rules">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text">自定义规则</span>
+        </li>
+        <li class="nav-item" data-tab="favorites">
+          <span class="nav-icon">⭐</span>
+          <span class="nav-text">收藏管理</span>
+        </li>
+        <li class="nav-item" data-tab="data">
+          <span class="nav-icon">💾</span>
+          <span class="nav-text">数据管理</span>
+        </li>
+        <li class="nav-item" data-tab="about">
+          <span class="nav-icon">ℹ️</span>
+          <span class="nav-text">关于</span>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="content">
+      <!-- 常规设置 -->
+      <div id="general" class="tab-content active">
+        <h2>常规设置</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="autoDetect" />
+              <span>自动检测页面中的表格</span>
+            </label>
+            <p class="setting-desc">启用后将自动识别包含联系人信息的表格</p>
+          </div>
+          
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="highlightResults" />
+              <span>高亮显示搜索结果</span>
+            </label>
+            <p class="setting-desc">在页面中高亮匹配的联系人信息</p>
+          </div>
+          
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="cacheEnabled" />
+              <span>启用缓存</span>
+            </label>
+            <p class="setting-desc">缓存搜索结果以提高性能</p>
+          </div>
+          
+          <div class="setting-item">
+            <label for="cacheTTL">缓存有效期</label>
+            <select id="cacheTTL" class="setting-input">
+              <option value="60000">1 分钟</option>
+              <option value="300000">5 分钟</option>
+              <option value="900000">15 分钟</option>
+              <option value="1800000">30 分钟</option>
+              <option value="3600000">1 小时</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- API 配置 -->
+      <div id="api" class="tab-content">
+        <h2>API 配置</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="apiUrl">服务地址</label>
+            <input type="text" id="apiUrl" class="setting-input" placeholder="http://localhost:3000" />
+            <p class="setting-desc">联系人查询服务的地址（内部系统无需认证）</p>
+          </div>
+          
+          <div class="setting-item">
+            <button id="testConnection" class="btn btn-primary">测试连接</button>
+            <div id="connectionResult" class="test-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 显示设置 -->
+      <div id="display" class="tab-content">
+        <h2>显示设置</h2>
+        
+        <div class="setting-group">
+          <div class="setting-item">
+            <label for="displayMode">默认显示模式</label>
+            <select id="displayMode" class="setting-input">
+              <option value="sidebar">侧边栏</option>
+              <option value="inline">行内显示</option>
+              <option value="card">快速卡片</option>
+            </select>
+            <p class="setting-desc">选择搜索结果的默认显示方式</p>
+          </div>
+          
+          <div class="setting-item">
+            <label for="resultLimit">结果数量限制</label>
+            <input type="number" id="resultLimit" class="setting-input" min="1" max="50" value="10" />
+            <p class="setting-desc">每次搜索返回的最大结果数</p>
+          </div>
+          
+          <div class="setting-item">
+            <label for="theme">主题</label>
+            <select id="theme" class="setting-input">
+              <option value="light">浅色</option>
+              <option value="dark">深色</option>
+              <option value="auto">跟随系统</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 自定义规则 -->
+      <div id="rules" class="tab-content">
+        <h2>自定义规则</h2>
+        
+        <div class="rules-header">
+          <p>添加自定义规则以识别特定网站的联系人信息</p>
+          <button id="addRule" class="btn btn-primary">添加规则</button>
+        </div>
+        
+        <div id="rulesList" class="rules-list">
+          <div class="empty-state">暂无自定义规则</div>
+        </div>
+      </div>
+
+      <!-- 收藏管理 -->
+      <div id="favorites" class="tab-content">
+        <h2>收藏管理</h2>
+        
+        <div class="favorites-header">
+          <input type="text" id="favoritesSearch" class="search-input" placeholder="搜索收藏..." />
+          <button id="exportFavorites" class="btn btn-secondary">导出</button>
+        </div>
+        
+        <div id="favoritesList" class="favorites-grid">
+          <div class="empty-state">暂无收藏的联系人</div>
+        </div>
+      </div>
+
+      <!-- 数据管理 -->
+      <div id="data" class="tab-content">
+        <h2>数据管理</h2>
+        
+        <div class="data-section">
+          <h3>搜索历史</h3>
+          <div class="data-stats">
+            <span id="historyCount">0</span> 条记录
+          </div>
+          <button id="clearHistory" class="btn btn-danger">清除历史</button>
+        </div>
+        
+        <div class="data-section">
+          <h3>缓存数据</h3>
+          <div class="data-stats">
+            缓存大小: <span id="cacheSize">0 KB</span>
+          </div>
+          <button id="clearCache" class="btn btn-danger">清除缓存</button>
+        </div>
+        
+        <div class="data-section">
+          <h3>导入/导出</h3>
+          <div class="data-actions">
+            <button id="exportAll" class="btn btn-primary">导出所有数据</button>
+            <button id="importData" class="btn btn-secondary">导入数据</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;" />
+          </div>
+        </div>
+        
+        <div class="data-section">
+          <h3>重置</h3>
+          <p class="warning-text">⚠️ 此操作将清除所有数据并恢复默认设置</p>
+          <button id="resetAll" class="btn btn-danger">重置所有设置</button>
+        </div>
+      </div>
+
+      <!-- 关于 -->
+      <div id="about" class="tab-content">
+        <h2>关于</h2>
+        
+        <div class="about-content">
+          <div class="about-logo">📇</div>
+          <h3>联系人查询助手</h3>
+          <p class="version">版本 1.0.0</p>
+          
+          <div class="about-section">
+            <h4>功能特点</h4>
+            <ul>
+              <li>🔍 智能识别页面中的联系人信息</li>
+              <li>📊 自动检测和增强表格数据</li>
+              <li>⚡ 快速查询和批量处理</li>
+              <li>💾 本地缓存和收藏管理</li>
+              <li>🎨 多种显示模式</li>
+            </ul>
+          </div>
+          
+          <div class="about-section">
+            <h4>快捷键</h4>
+            <ul>
+              <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd> - 打开搜索</li>
+              <li><kbd>Esc</kbd> - 关闭当前界面</li>
+            </ul>
+          </div>
+          
+          <div class="about-links">
+            <a href="https://github.com/yourusername/contact-query-extension" target="_blank">GitHub</a>
+            <a href="https://github.com/yourusername/contact-query-extension/issues" target="_blank">反馈问题</a>
+            <a href="https://github.com/yourusername/contact-query-extension/wiki" target="_blank">使用文档</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 消息提示 -->
+  <div id="toast" class="toast"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>
