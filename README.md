@@ -123,6 +123,30 @@ import { SecureIframe } from '@/components/secure-iframe';
 
 ## 🛠️ 开发方式
 
+### Ubuntu 快速安装 Docker 与 Compose
+
+适用于 VMware Ubuntu 20.04/22.04 等环境：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release; echo $UBUNTU_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 将当前用户加入 docker 组（非 root 运行）
+sudo usermod -aG docker $USER && newgrp docker
+
+# 验证安装
+docker --version
+docker compose version
+
+# 如果启用 UFW，开放端口（按需）
+sudo ufw allow 8088,8089,8444,8445/tcp
+```
+
 ### Docker 开发环境（推荐）
 
 ```bash
