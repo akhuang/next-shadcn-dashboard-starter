@@ -30,6 +30,8 @@ services:
     volumes:
       # 持久化上传文件等
       - ../../uploads:/app/uploads
+      # Excel 文件监控目录（简单映射）
+      - ./excel-data:/tmp/test-contacts
     expose:
       - '3000'
     healthcheck:

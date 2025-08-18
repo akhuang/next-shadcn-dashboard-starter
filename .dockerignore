@@ -59,8 +59,9 @@ docs
 .gitlab-ci.yml
 .circleci
 
-# Scripts
+# Scripts (exclude docker scripts)
 scripts
+!scripts/docker
 deploy
 
 # Temporary files

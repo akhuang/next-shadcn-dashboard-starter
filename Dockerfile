@@ -60,10 +60,6 @@ ENV https_proxy=${https_proxy:-${HTTPS_PROXY}}
 ENV no_proxy=${no_proxy:-${NO_PROXY}}
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
-# 复制依赖
-COPY --from=deps /app/node_modules ./node_modules
-COPY .. .
-
 # 设置环境变量
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
@@ -73,14 +69,21 @@ RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
     if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy $HTTPS_PROXY; fi && \
     npm config set strict-ssl false
 
-# 构建应用
+# 安装 pnpm（缓存层）
 RUN npm install -g pnpm@latest
 
-# 配置 pnpm 代理和 SSL
+# 配置 pnpm 代理和 SSL（缓存层）
 RUN if [ -n "$HTTP_PROXY" ]; then pnpm config set proxy $HTTP_PROXY; fi && \
     if [ -n "$HTTPS_PROXY" ]; then pnpm config set https-proxy $HTTPS_PROXY; fi && \
     pnpm config set strict-ssl false
 
+# 复制依赖（这层基本不变）
+COPY --from=deps /app/node_modules ./node_modules
+
+# 复制代码（放在最后，代码变动只影响这层之后）
+COPY . .
+
+# 构建应用
 RUN pnpm run build
 
 # 多阶段构建 - 第三阶段：生产运行
