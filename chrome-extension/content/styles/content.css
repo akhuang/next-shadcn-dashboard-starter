@@ -431,3 +431,6 @@
     right: -100%;
   }
 }
+
+/* 导入 iframe 卡片样式 */
+@import './iframe-card.css';

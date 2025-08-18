@@ -37,6 +37,7 @@
         "content/ui/sidebar.js",
         "content/ui/inline-results.js",
         "content/ui/quick-card.js",
+        "content/ui/iframe-card.js",
         "content/main.js"
       ],
       "css": ["content/styles/content.css"],

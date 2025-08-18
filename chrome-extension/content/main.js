@@ -86,8 +86,12 @@ class ContactQueryExtension {
       floatingButton: new window.CRMUIComponents.FloatingButton(),
       sidebar: new window.CRMUIComponents.Sidebar(),
       inlineResults: new window.CRMUIComponents.InlineResults(),
-      quickCard: new window.CRMUIComponents.QuickCard()
+      quickCard: new window.CRMUIComponents.QuickCard(),
+      iframeCard: new window.CRMUIComponents.IframeCard()
     };
+
+    // 初始化 iframe 卡片
+    await this.ui.iframeCard.init();
 
     // 根据配置初始化默认UI
     if (this.config.displayMode === 'sidebar') {
@@ -145,15 +149,22 @@ class ContactQueryExtension {
 
     // 如果是双击且识别为姓名或联系方式，自动查询
     if (isDoubleClick && queryType.type !== 'unknown') {
-      this.queryContact(text, { position });
+      // 使用 iframe 卡片显示查询结果
+      this.showIframeQuery(text, position);
     } else {
       // 显示查询按钮
       this.ui.floatingButton.show({
         position,
         text: `查询: ${text.substring(0, 10)}${text.length > 10 ? '...' : ''}`,
-        onClick: () => this.queryContact(text, { position })
+        onClick: () => this.showIframeQuery(text, position)
       });
     }
+  }
+
+  // 显示 iframe 查询
+  async showIframeQuery(query, position) {
+    // 使用 iframe 卡片显示查询页面
+    await this.ui.iframeCard.show(query, position);
   }
 
   // 处理表格更新
@@ -210,9 +221,15 @@ class ContactQueryExtension {
     }
   }
 
-  // 查询联系人
+  // 查询联系人（保留旧版本以支持其他功能）
   async queryContact(query, options = {}) {
     try {
+      // 如果配置使用 iframe 模式，直接显示 iframe
+      if (this.config.displayMode === 'iframe') {
+        await this.ui.iframeCard.show(query, options.position);
+        return;
+      }
+
       // 显示加载状态
       this.showLoading(options.position);
 
@@ -423,6 +440,7 @@ class ContactQueryExtension {
     this.ui.sidebar.hide();
     this.ui.inlineResults.hide();
     this.ui.quickCard.hide();
+    this.ui.iframeCard.hide();
   }
 
   // 显示加载状态
