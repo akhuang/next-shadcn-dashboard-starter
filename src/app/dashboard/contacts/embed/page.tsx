@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ContactWorkspace } from '@/features/contacts/components/contact-workspace';
+import ContactWorkspace from '@/features/contacts/components/contact-workspace';
 
 export default function EmbedContactsPage() {
   const searchParams = useSearchParams();
