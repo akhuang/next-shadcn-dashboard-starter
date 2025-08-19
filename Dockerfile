@@ -63,6 +63,8 @@ ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 # 设置环境变量
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
+# Skip Redis connection during build
+ENV SKIP_BUILD_REDIS true
 
 # 配置 npm 和 pnpm 代理设置
 RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
