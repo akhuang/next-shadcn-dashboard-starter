@@ -314,7 +314,7 @@ export default function ContactSearchResults({
                             </tr>
                           </thead>
                           <tbody>
-                            {group.contacts.map((contact, idx) => {
+                            {group.contacts.slice(0, 5).map((contact, idx) => {
                               const rowId = `${groupId}-${idx}`;
                               return (
                                 <tr
@@ -360,9 +360,9 @@ export default function ContactSearchResults({
                       </div>
 
                       {/* 如果结果太多，显示提示 */}
-                      {group.contacts.length > 10 && (
+                      {group.contacts.length > 5 && (
                         <div className='text-muted-foreground mt-4 text-center text-sm'>
-                          显示全部 {group.contacts.length} 条结果
+                          仅显示前 5 条，共 {group.contacts.length} 条结果
                         </div>
                       )}
                     </div>

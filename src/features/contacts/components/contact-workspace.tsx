@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,7 @@ interface FileData {
     contacts: Contact[];
     columns: string[];
     mergeRanges?: MergeRange[];
+    totalRows?: number;
   }>;
   icon: any;
   color: string;
@@ -59,7 +60,7 @@ interface FileData {
 
 // 文件配置
 const getFileConfig = (fileName: string) => {
-  const name = fileName.toLowerCase();
+  const name = (fileName || '').toLowerCase();
   if (name.includes('客户') || name.includes('customer'))
     return {
       icon: Users,
@@ -96,12 +97,48 @@ const getFileConfig = (fileName: string) => {
   };
 };
 
+// 格式化同步时间
+const formatSyncTime = (date: Date | null) => {
+  if (!date) return { time: '', relative: '' };
+  
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  
+  // 始终显示完整时间（年月日 时分秒）
+  const time = date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  // 相对时间
+  let relative = '';
+  if (seconds < 10) relative = '刚更新';
+  else if (seconds < 60) relative = `${seconds}秒前`;
+  else if (minutes < 60) relative = `${minutes}分钟前`;
+  else if (hours < 24) relative = `${hours}小时前`;
+  else {
+    // 如果超过24小时，显示天数
+    const days = Math.floor(hours / 24);
+    relative = `${days}天前`;
+  }
+  
+  return { time, relative };
+};
+
 export default function ContactWorkspace() {
   const [data, setData] = useState<ExcelData>({
     contacts: [],
     lastUpdated: new Date(),
     files: []
   });
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [folderPath, setFolderPath] = useState('/tmp/test-contacts');
   const [isConnected, setIsConnected] = useState(false);
@@ -110,128 +147,190 @@ export default function ContactWorkspace() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   // const [showSearchOverlay, setShowSearchOverlay] = useState(false); // 不再需要遮罩层
   const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  // 新的状态：存储从API获取的文件信息
+  const [apiFiles, setApiFiles] = useState<any[]>([]);
+  const [sheetInfoMap, setSheetInfoMap] = useState<Record<string, Record<string, any>>>({});
+  const [currentSheetContacts, setCurrentSheetContacts] = useState<Contact[]>([]);
+  const [loadingSheet, setLoadingSheet] = useState(false);
+  const [totalRows, setTotalRows] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
+  
 
   // 使用防抖处理搜索查询
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // 构建文件数据结构
+  // 构建文件数据结构 - 使用新的API数据
   const fileDataList = useMemo(() => {
-    const filesMap = new Map<string, FileData>();
-
-    data.contacts.forEach((contact) => {
-      if (!filesMap.has(contact.fileName)) {
-        const config = getFileConfig(contact.fileName);
-        filesMap.set(contact.fileName, {
-          fileName: contact.fileName,
-          displayName: contact.fileName.replace(/\.(xlsx|xls|xlsm)$/i, ''),
-          sheets: [],
-          icon: config.icon,
-          color: config.color,
-          bgColor: config.bgColor,
-          totalContacts: 0
-        });
-      }
-
-      const fileData = filesMap.get(contact.fileName)!;
-      let sheet = fileData.sheets.find((s) => s.name === contact.sheetName);
-
-      if (!sheet) {
-        sheet = {
-          name: contact.sheetName,
-          contacts: [],
-          columns: [],
-          mergeRanges: []
+    return apiFiles.map((file) => {
+      const safeFileName = file?.fileName || '';
+      const config = getFileConfig(safeFileName);
+      const sheets = file.sheets?.map((sheetName: string) => {
+        const sheetInfo = sheetInfoMap[safeFileName]?.[sheetName];
+        return {
+          name: sheetName,
+          contacts: selectedFile === safeFileName && selectedSheet === sheetName ? currentSheetContacts : [],
+          columns: sheetInfo?.columns || [],
+          mergeRanges: sheetInfo?.mergeRanges || [],
+          title: sheetInfo?.title,
+          totalRows: sheetInfo?.totalRows || 0
         };
-        fileData.sheets.push(sheet);
-      }
+      }) || [];
 
-      sheet.contacts.push(contact);
-      fileData.totalContacts++;
+      return {
+        fileName: safeFileName,
+        displayName: file.displayName || safeFileName.replace(/\.(xlsx|xls|xlsm)$/i, ''),
+        sheets,
+        icon: config.icon,
+        color: config.color,
+        bgColor: config.bgColor,
+        // 使用已加载的 sheetInfo 的 totalRows 汇总作为记录数展示
+        totalContacts: sheets.reduce((sum: number, sheet: { totalRows?: number }) => sum + (sheet.totalRows || 0), 0)
+      } as FileData;
     });
-
-    // 计算每个Sheet的列和合并信息
-    filesMap.forEach((fileData) => {
-      fileData.sheets.forEach((sheet) => {
-        const columnsSet = new Set<string>();
-        sheet.contacts.forEach((contact) => {
-          Object.keys(contact.rowData).forEach((key) => columnsSet.add(key));
-        });
-        sheet.columns = Array.from(columnsSet);
-
-        // 从 sheetInfoMap 获取合并信息
-        if (data.sheetInfoMap && data.sheetInfoMap[fileData.fileName]) {
-          const sheetInfo = data.sheetInfoMap[fileData.fileName][sheet.name];
-          if (sheetInfo && sheetInfo.mergeRanges) {
-            sheet.mergeRanges = sheetInfo.mergeRanges;
-          }
-        }
-      });
-    });
-
-    return Array.from(filesMap.values());
-  }, [data.contacts, data.sheetInfoMap]);
+  }, [apiFiles, sheetInfoMap, selectedFile, selectedSheet, currentSheetContacts]);
 
   // 当前选中文件的数据
   const currentFileData = useMemo(() => {
     return fileDataList.find((f) => f.fileName === selectedFile);
   }, [fileDataList, selectedFile]);
 
-  // 当前选中Sheet的所有数据
-  const currentSheetContacts = useMemo(() => {
-    if (currentFileData && selectedSheet) {
-      const sheet = currentFileData.sheets.find(
-        (s) => s.name === selectedSheet
+  // 加载Sheet数据
+  const loadSheetData = useCallback(async (fileName: string, sheetName: string, page: number = 1) => {
+    if (!fileName || !sheetName) return;
+    
+    setLoadingSheet(true);
+    try {
+      const response = await fetch(
+        `/api/excel/v3?action=getSheetData&fileName=${encodeURIComponent(fileName)}&sheetName=${encodeURIComponent(sheetName)}&page=${page}&pageSize=${pageSize}`
       );
-      return sheet ? sheet.contacts : [];
+      const result = await response.json();
+      
+      if (result.success) {
+        setCurrentSheetContacts(result.data.data);
+        setTotalRows(result.data.total);
+      }
+    } catch (error) {
+      console.error('Failed to load sheet data:', error);
+      setCurrentSheetContacts([]);
+    } finally {
+      setLoadingSheet(false);
     }
-    return [];
-  }, [currentFileData, selectedSheet]);
+  }, [pageSize]);
 
-  // 全局搜索 - 使用防抖后的查询搜索所有文件的所有数据
-  const globalSearchResults = useMemo(() => {
-    if (!debouncedSearchQuery.trim()) {
-      return null;
+  // 全局搜索 - 使用异步搜索 API
+  const [searchResults, setSearchResults] = useState<{
+    total: Contact[];
+    grouped: Array<{ fileName: string; sheetName: string; contacts: Contact[] }>;
+    hasMultipleSources: boolean;
+  } | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // 执行搜索
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults(null);
+      return;
     }
 
-    const query = debouncedSearchQuery.toLowerCase();
-    const results = data.contacts.filter((contact) => {
-      // 搜索所有字段
-      return Object.values(contact.rowData).some((value) =>
-        value?.toString().toLowerCase().includes(query)
+    setSearchLoading(true);
+    try {
+      const response = await fetch(
+        `/api/excel/v3?action=search&query=${encodeURIComponent(query)}&page=1&pageSize=100`
       );
-    });
+      const result = await response.json();
+      
+      if (result.success) {
+        const results = result.data.data;
+        
+        // 按文件和Sheet分组
+        const grouped = results.reduce(
+          (acc: any, contact: Contact) => {
+            const key = `${contact.fileName}|||${contact.sheetName}`;
+            if (!acc[key]) {
+              acc[key] = {
+                fileName: contact.fileName,
+                sheetName: contact.sheetName,
+                contacts: []
+              };
+            }
+            acc[key].contacts.push(contact);
+            return acc;
+          },
+          {}
+        );
 
-    // 按文件和Sheet分组
-    const grouped = results.reduce(
-      (acc, contact) => {
-        const key = `${contact.fileName}|||${contact.sheetName}`;
-        if (!acc[key]) {
-          acc[key] = {
-            fileName: contact.fileName,
-            sheetName: contact.sheetName,
-            contacts: []
-          };
-        }
-        acc[key].contacts.push(contact);
-        return acc;
-      },
-      {} as Record<
-        string,
-        { fileName: string; sheetName: string; contacts: typeof results }
-      >
-    );
+        setSearchResults({
+          total: results,
+          grouped: Object.values(grouped),
+          hasMultipleSources: Object.keys(grouped).length > 1
+        });
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
 
-    return {
-      total: results,
-      grouped: Object.values(grouped),
-      hasMultipleSources: Object.keys(grouped).length > 1
-    };
-  }, [data.contacts, debouncedSearchQuery]);
+  // 防抖搜索
+  useEffect(() => {
+    performSearch(debouncedSearchQuery);
+  }, [debouncedSearchQuery, performSearch]);
 
   // 显示的联系人数据：搜索时不改变表格内容，只显示当前Sheet
   const displayContacts = useMemo(() => {
     return currentSheetContacts;
   }, [currentSheetContacts]);
+
+  // 只加载文件列表（不加载工作表信息）
+  const loadFilesList = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/excel/v3?action=getFiles');
+      const result = await response.json();
+      
+      if (result.success && result.data.files) {
+        setApiFiles(result.data.files);
+        // 服务器应该返回数据的最后更新时间
+        if (result.data.lastUpdate) {
+          const updateTime = new Date(result.data.lastUpdate);
+          setData(prev => ({
+            ...prev,
+            lastUpdated: updateTime
+          }));
+          setLastSyncTime(updateTime);
+        } else {
+          // 如果服务器没有返回更新时间，说明API有问题
+          console.error('API did not return lastUpdate timestamp');
+          setLastSyncTime(null);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load files list:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 组件初始化：只加载文件列表
+  useEffect(() => {
+    loadFilesList();
+  }, [loadFilesList]);
+
+  // 定时更新同步时间显示
+  useEffect(() => {
+    if (!lastSyncTime) return;
+    
+    const timer = setInterval(() => {
+      // 触发重新渲染以更新时间显示
+      setLastSyncTime(prev => prev ? new Date(prev) : null);
+    }, 60000); // 每分钟更新一次
+    
+    return () => clearInterval(timer);
+  }, [lastSyncTime]);
 
   // 初始化选择
   useEffect(() => {
@@ -266,13 +365,16 @@ export default function ContactWorkspace() {
   const initializeFolder = async () => {
     setLoading(true);
     try {
+      // 使用异步缓存 API
       const response = await fetch(
-        `/api/excel?action=setFolder&folderPath=${encodeURIComponent(folderPath)}`
+        `/api/excel/v3?action=setFolder&folderPath=${encodeURIComponent(folderPath)}`
       );
       const result = await response.json();
       if (result.success) {
-        setData(result.data);
+        // 立即加载文件列表
+        await loadFilesList();
         setSettingsOpen(false);
+        // lastSyncTime 将由 loadFilesList 根据服务器返回的时间设置
       }
     } catch (error) {
       // ignore initialize error
@@ -281,19 +383,57 @@ export default function ContactWorkspace() {
     }
   };
 
+  // 加载指定工作表的信息（按需加载）
+  const loadSheetInfo = useCallback(async (fileName: string, sheetName: string) => {
+    // 检查是否已缓存
+    if (sheetInfoMap[fileName]?.[sheetName]) {
+      return sheetInfoMap[fileName][sheetName];
+    }
+    try {
+      const response = await fetch(
+        `/api/excel/v3?action=getSheetInfo&fileName=${encodeURIComponent(fileName)}&sheetName=${encodeURIComponent(sheetName)}`
+      );
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // 更新缓存
+        setSheetInfoMap(prev => ({
+          ...prev,
+          [fileName]: {
+            ...prev[fileName],
+            [sheetName]: result.data
+          }
+        }));
+        return result.data;
+      }
+    } catch (error) {
+      console.error(`Failed to load sheet info for ${fileName}:${sheetName}`, error);
+    }
+    return null;
+  }, [sheetInfoMap]);
+
   // SSE连接
   useEffect(() => {
     if (!folderPath) return;
 
     initializeFolder();
 
-    const es = new EventSource('/api/excel/stream');
+    const es = new EventSource('/api/excel/v3/stream');
 
     es.onopen = () => setIsConnected(true);
     es.onmessage = (event) => {
       try {
-        const newData = JSON.parse(event.data);
-        setData(newData);
+        const data = JSON.parse(event.data);
+        
+        // 只监听缓存状态，不自动刷新前端
+        // 用户需要手动刷新页面来获取最新数据
+        if (data.type === 'cache_status') {
+          console.log('Cache updated, user can refresh page to see changes');
+        }
+        
+        if (data.type === 'task_complete') {
+          console.log('Background task completed');
+        }
       } catch (error) {
         console.error('Error parsing SSE data:', error);
       }
@@ -338,13 +478,37 @@ export default function ContactWorkspace() {
     link.click();
   };
 
-  const selectFile = (fileName: string) => {
+  const selectFile = useCallback((fileName: string) => {
     setSelectedFile(fileName);
-    const fileData = fileDataList.find((f) => f.fileName === fileName);
-    if (fileData && fileData.sheets.length > 0) {
-      setSelectedSheet(fileData.sheets[0].name);
+    // 从apiFiles中获取sheets信息（不需要详细的工作表信息）
+    const file = apiFiles.find(f => f.fileName === fileName);
+    if (file && file.sheets && file.sheets.length > 0) {
+      setSelectedSheet(file.sheets[0]);
     }
-  };
+  }, [apiFiles]);
+
+  // 统一的数据加载逻辑：只在文件/工作表变化时触发
+  useEffect(() => {
+    if (selectedFile && selectedSheet) {
+      // 重置页码到第1页
+      setCurrentPage(1);
+      
+      // 先加载工作表信息，再加载第1页数据
+      const loadData = async () => {
+        await loadSheetInfo(selectedFile, selectedSheet);
+        await loadSheetData(selectedFile, selectedSheet, 1);
+      };
+      
+      loadData();
+    }
+  }, [selectedFile, selectedSheet, loadSheetData, loadSheetInfo]);
+
+  // 单独处理页码变化（当页码 > 1 时）
+  useEffect(() => {
+    if (selectedFile && selectedSheet && currentPage > 1) {
+      loadSheetData(selectedFile, selectedSheet, currentPage);
+    }
+  }, [currentPage]);
 
   // 处理搜索结果选择 - 不再需要，因为使用直接展示模式
   // const handleSearchResultSelect = useCallback(
@@ -367,7 +531,7 @@ export default function ContactWorkspace() {
           setSearchQuery('');
         }}
         searchQuery={debouncedSearchQuery}
-        searchResults={globalSearchResults}
+        searchResults={searchResults}
         onSelectResult={handleSearchResultSelect}
       /> */}
 
@@ -390,6 +554,18 @@ export default function ContactWorkspace() {
                   '离线'
                 )}
               </Badge>
+              {lastSyncTime && (
+                <span className='text-xs text-muted-foreground'>
+                  最新数据: {lastSyncTime.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                </span>
+              )}
             </div>
 
             {/* 居中搜索框 */}
@@ -482,8 +658,8 @@ export default function ContactWorkspace() {
           <div className='flex-1 overflow-auto p-4'>
             <ContactSearchResults
               searchQuery={debouncedSearchQuery}
-              searchResults={globalSearchResults}
-              isSearching={searchQuery !== debouncedSearchQuery}
+              searchResults={searchResults}
+              isSearching={searchLoading || searchQuery !== debouncedSearchQuery}
               onClose={() => setSearchQuery('')}
             />
           </div>
@@ -535,8 +711,10 @@ export default function ContactWorkspace() {
                             {fileData.displayName}
                           </div>
                           <div className='text-muted-foreground truncate text-xs'>
-                            {fileData.sheets.length} 个分类 ·{' '}
-                            {fileData.totalContacts} 条记录
+                            {fileData.sheets.length} 个分类
+                            {fileData.totalContacts > 0 && (
+                              <> · {fileData.totalContacts} 条记录</>
+                            )}
                           </div>
                         </div>
                       </Button>
@@ -571,12 +749,14 @@ export default function ContactWorkspace() {
                               >
                                 {sheet.name}
                               </span>
-                              <Badge
-                                variant='secondary'
-                                className='ml-1.5 min-w-[1.2rem] justify-center px-1 py-0 text-xs'
-                              >
-                                {sheet.contacts.length}
-                              </Badge>
+                              {sheet.totalRows !== undefined && sheet.totalRows > 0 && (
+                                <Badge
+                                  variant='secondary'
+                                  className='ml-1.5 min-w-[1.2rem] justify-center px-1 py-0 text-xs'
+                                >
+                                  {sheet.totalRows}
+                                </Badge>
+                              )}
                             </TabsTrigger>
                           ))}
                         </div>
@@ -632,26 +812,66 @@ export default function ContactWorkspace() {
                     <TabsContent
                       key={sheet.name}
                       value={sheet.name}
-                      className='mt-0 min-h-0 min-w-0 flex-1 overflow-hidden overflow-x-auto data-[state=active]:flex'
+                      className='mt-0 min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden data-[state=active]:flex'
                     >
                       {selectedSheet === sheet.name && (
-                        <ExcelTable
-                          contacts={displayContacts}
-                          columns={
-                            searchQuery
-                              ? Array.from(
-                                  new Set(
-                                    displayContacts.flatMap((c) =>
-                                      Object.keys(c.rowData)
-                                    )
-                                  )
-                                )
-                              : sheet.columns
-                          }
-                          onExport={exportToCSV}
-                          mergeRanges={sheet.mergeRanges || []}
-                          enableAutoMerge={false}
-                        />
+                        <>
+                          {/* 分页控件 */}
+                          <div className='flex items-center justify-between border-b bg-muted/30 px-4 py-2'>
+                            <div className='text-sm text-muted-foreground'>
+                              共 {totalRows} 条数据，当前第 {currentPage} 页，每页 {pageSize} 条
+                            </div>
+                            <div className='flex items-center space-x-2'>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage <= 1 || loadingSheet}
+                              >
+                                上一页
+                              </Button>
+                              <span className='text-sm'>
+                                {currentPage} / {Math.ceil(totalRows / pageSize) || 1}
+                              </span>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setCurrentPage(p => p + 1)}
+                                disabled={currentPage >= Math.ceil(totalRows / pageSize) || loadingSheet}
+                              >
+                                下一页
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* 表格内容 */}
+                          <div className='flex-1 overflow-hidden'>
+                            {loadingSheet ? (
+                              <div className='flex h-full items-center justify-center'>
+                                <RefreshCw className='h-8 w-8 animate-spin text-muted-foreground' />
+                                <span className='ml-2 text-muted-foreground'>加载中...</span>
+                              </div>
+                            ) : (
+                              <ExcelTable
+                                contacts={displayContacts}
+                                columns={
+                                  searchQuery
+                                    ? Array.from(
+                                        new Set(
+                                          displayContacts.flatMap((c) =>
+                                            Object.keys(c.rowData)
+                                          )
+                                        )
+                                      )
+                                    : sheet.columns
+                                }
+                                onExport={exportToCSV}
+                                mergeRanges={sheet.mergeRanges || []}
+                                enableAutoMerge={false}
+                              />
+                            )}
+                          </div>
+                        </>
                       )}
                     </TabsContent>
                   ))}

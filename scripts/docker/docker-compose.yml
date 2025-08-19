@@ -25,6 +25,15 @@ services:
       - TZ=Asia/Shanghai
       # Microsoft Clarity Analytics (Optional)
       - NEXT_PUBLIC_CLARITY_PROJECT_ID=${NEXT_PUBLIC_CLARITY_PROJECT_ID}
+      # Redis 连接配置
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-0}
+      # Excel 监控配置
+      - EXCEL_WATCH_DIR=/tmp/test-contacts
+      - EXCEL_WATCH_POLLING=false
+      - EXCEL_WATCH_INTERVAL=1000
     networks:
       - dashboard-network
     volumes:
@@ -47,6 +56,35 @@ services:
       retries: 3
       start_period: 40s
 
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: nextjs-dashboard-redis
+    restart: unless-stopped
+    command: >
+      redis-server 
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - dashboard-network
+    volumes:
+      - redis-data:/data
+      - redis-logs:/var/log/redis
+    expose:
+      - '6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   # Nginx 反向代理和 SSL 终止
   nginx:
     image: nginx:alpine
@@ -54,6 +92,7 @@ services:
     restart: unless-stopped
     depends_on:
       - app
+      - redis
     ports:
       - '${HTTP_PORT:-8088}:80'
       - '${HTTPS_PORT:-8444}:443' # HTTPS 端口
@@ -99,13 +138,13 @@ networks:
   dashboard-network:
     name: dashboard-network
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/16
 
 volumes:
   nginx-logs:
     driver: local
   nginx-cache:
+    driver: local
+  redis-data:
+    driver: local
+  redis-logs:
     driver: local
