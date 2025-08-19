@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 // import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -287,78 +287,86 @@ export default function ContactSearchResults({
               {/* 组内容 - 表格形式展示 */}
               {isExpanded && (
                 <div className='border-t'>
-                  <ScrollArea className='max-h-[400px]'>
+                  <ScrollArea className='max-h-[400px] w-full'>
                     <div className='p-4'>
-                      {/* 简单表格展示 */}
-                      <div className='overflow-x-auto'>
-                        <table className='w-full text-sm'>
-                          <thead>
-                            <tr className='border-b'>
-                              <th className='text-muted-foreground p-2 text-left font-medium'>
-                                #
-                              </th>
-                              {/* 动态生成表头 */}
-                              {Object.keys(
-                                group.contacts[0]?.rowData || {}
-                              ).map((key) => (
+                      {/* 表格展示（与主表格风格一致，并支持横向滚动） */}
+                      <table
+                        className='border-collapse border border-gray-300 text-sm'
+                        style={{ tableLayout: 'auto', minWidth: '100%' }}
+                      >
+                        <thead className='bg-gray-50'>
+                          <tr>
+                            <th className='sticky left-0 z-10 w-[3.5rem] max-w-[3.5rem] border border-gray-300 bg-gray-50 px-3 py-2 text-left text-sm font-semibold'>
+                              #
+                            </th>
+                            {/* 动态生成表头 */}
+                            {Object.keys(group.contacts[0]?.rowData || {}).map(
+                              (key) => (
                                 <th
                                   key={key}
-                                  className='text-muted-foreground p-2 text-left font-medium'
+                                  className='border border-gray-300 px-3 py-2 text-left text-sm font-semibold'
+                                  style={{ minWidth: '120px' }}
                                 >
-                                  {key}
+                                  <div className='truncate' title={key}>
+                                    {key}
+                                  </div>
                                 </th>
-                              ))}
-                              <th className='text-muted-foreground p-2 text-center font-medium'>
-                                操作
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {group.contacts.slice(0, 5).map((contact, idx) => {
-                              const rowId = `${groupId}-${idx}`;
-                              return (
-                                <tr
-                                  key={rowId}
-                                  className='hover:bg-accent/50 border-b transition-colors'
-                                >
-                                  <td className='text-muted-foreground p-2'>
-                                    {idx + 1}
-                                  </td>
-                                  {Object.entries(contact.rowData).map(
-                                    ([key, value]) => (
-                                      <td key={key} className='p-2'>
-                                        <div className='max-w-[200px] truncate'>
-                                          {highlightMatch(
-                                            String(value || ''),
-                                            searchQuery
-                                          )}
-                                        </div>
-                                      </td>
-                                    )
-                                  )}
-                                  <td className='p-2 text-center'>
-                                    <Button
-                                      size='sm'
-                                      variant='ghost'
-                                      onClick={() =>
-                                        copyToClipboard(contact.rowData, rowId)
-                                      }
-                                      className='h-7 w-7 p-0'
+                              )
+                            )}
+                            <th className='border border-gray-300 px-3 py-2 text-center text-sm font-semibold'>
+                              操作
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.contacts.slice(0, 5).map((contact, idx) => {
+                            const rowId = `${groupId}-${idx}`;
+                            return (
+                              <tr key={rowId} className='hover:bg-gray-50'>
+                                <td className='sticky left-0 z-10 w-[3.5rem] max-w-[3.5rem] border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-500'>
+                                  {idx + 1}
+                                </td>
+                                {Object.entries(contact.rowData).map(
+                                  ([key, value]) => (
+                                    <td
+                                      key={key}
+                                      className='border border-gray-300 px-3 py-2 text-sm'
+                                      style={{ minWidth: '120px' }}
+                                      title={String(value || '')}
                                     >
-                                      {copiedItems.has(rowId) ? (
-                                        <Check className='h-3 w-3 text-green-600' />
-                                      ) : (
-                                        <Copy className='h-3 w-3' />
-                                      )}
-                                    </Button>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
+                                      <div className='max-w-[240px] truncate'>
+                                        {highlightMatch(
+                                          String(value || ''),
+                                          searchQuery
+                                        )}
+                                      </div>
+                                    </td>
+                                  )
+                                )}
+                                <td className='border border-gray-300 px-2 py-2 text-center'>
+                                  <Button
+                                    size='sm'
+                                    variant='ghost'
+                                    onClick={() =>
+                                      copyToClipboard(contact.rowData, rowId)
+                                    }
+                                    className='h-7 w-7 p-0'
+                                  >
+                                    {copiedItems.has(rowId) ? (
+                                      <Check className='h-3 w-3 text-green-600' />
+                                    ) : (
+                                      <Copy className='h-3 w-3' />
+                                    )}
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <ScrollBar orientation='horizontal' />
+                    <div className='p-4 pt-0'>
                       {/* 如果结果太多，显示提示 */}
                       {group.contacts.length > 5 && (
                         <div className='text-muted-foreground mt-4 text-center text-sm'>
