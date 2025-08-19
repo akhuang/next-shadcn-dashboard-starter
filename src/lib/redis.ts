@@ -3,53 +3,48 @@ import Redis from 'ioredis';
 // Skip Redis during build time
 const isBuilding = process.env.SKIP_BUILD_REDIS === 'true';
 
-// Lazy Redis connection - only connect when first used
-let redisInstance: Redis | null = null;
+// Create Redis instance immediately if not building
+let redis: Redis;
 
-function getRedis(): Redis {
-  if (!redisInstance) {
-    // During build, return a mock Redis that does nothing
-    if (isBuilding) {
-      console.log('Skipping Redis connection during build');
-      return new Proxy({} as Redis, {
-        get() {
-          return () => Promise.resolve(null);
-        }
-      });
+if (isBuilding) {
+  console.log('Skipping Redis connection during build');
+  // Create a mock Redis that returns promises for all methods
+  redis = new Proxy({} as Redis, {
+    get(target, prop) {
+      if (typeof prop === 'string') {
+        return () => Promise.resolve(null);
+      }
+      return undefined;
     }
+  });
+} else {
+  // Create real Redis connection
+  redis = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_DB || '0'),
+    retryStrategy: (times) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+    maxRetriesPerRequest: 3,
+    lazyConnect: true // Don't connect immediately
+  });
 
-    redisInstance = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_DB || '0'),
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-      maxRetriesPerRequest: 3,
-      lazyConnect: true // Don't connect immediately
-    });
+  redis.on('connect', () => {
+    console.log('Redis connected successfully');
+  });
 
-    redisInstance.on('connect', () => {
-      console.log('Redis connected successfully');
-    });
+  redis.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
 
-    redisInstance.on('error', (err) => {
-      console.error('Redis connection error:', err);
-    });
-  }
-
-  return redisInstance;
+  // Ensure connection is established when first used
+  redis.on('ready', () => {
+    console.log('Redis ready to accept commands');
+  });
 }
-
-// Export a proxy that creates connection on first use
-const redis = new Proxy({} as Redis, {
-  get(target, prop, receiver) {
-    const instance = getRedis();
-    return Reflect.get(instance, prop, instance);
-  }
-});
 
 export default redis;
 
