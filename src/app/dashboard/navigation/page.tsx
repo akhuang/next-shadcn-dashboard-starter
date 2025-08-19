@@ -1,5 +1,5 @@
-import NavigationPage from '@/features/navigation/components/navigation-page';
+import NavigationExcelPage from '@/features/navigation/components/navigation-excel-page';
 
 export default function Page() {
-  return <NavigationPage />;
+  return <NavigationExcelPage />;
 }

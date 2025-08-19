@@ -22,9 +22,9 @@ RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
 # Copy application code
 COPY . .
 
-# Create directory for Excel files
-RUN mkdir -p /data/excel-files && \
-    chown -R node:node /data/excel-files
+# Create directories for Excel files (contacts and navigation)
+RUN mkdir -p /data/contacts /data/navigation && \
+    chown -R node:node /data
 
 # Run as non-root user
 USER node
@@ -33,5 +33,5 @@ USER node
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "process.exit(0)"
 
-# Start the service
-CMD ["node", "index.js"]
+# Start the enhanced service by default
+CMD ["node", "index-enhanced.js"]

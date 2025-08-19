@@ -57,7 +57,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Excel 监控服务
+  # Excel 监控服务（增强版）
   excel-monitor:
     build:
       context: ../../excel-monitor-service
@@ -79,13 +79,20 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_DB=${REDIS_DB:-0}
-      - EXCEL_WATCH_DIR=/data/excel-files
+      # 联系人 Excel 监控目录
+      - EXCEL_WATCH_DIR=/data/contacts
+      # 导航 Excel 监控目录
+      - NAVIGATION_EXCEL_DIR=/data/navigation
       - TZ=Asia/Shanghai
     volumes:
-      # Excel 文件目录
-      - ./excel-data:/data/excel-files
+      # 联系人 Excel 文件目录
+      - ./excel-data:/data/contacts
+      # 导航 Excel 文件目录
+      - ./navigation-data:/data/navigation
     networks:
       - dashboard-network
+    # 使用增强版启动脚本
+    command: node index-enhanced.js
     healthcheck:
       test: ["CMD", "node", "-e", "process.exit(0)"]
       interval: 30s
