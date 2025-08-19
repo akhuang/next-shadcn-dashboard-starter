@@ -22,6 +22,38 @@ export default function ExcelTable({
   mergeRanges = [],
   enableAutoMerge = false
 }: ExcelTableProps) {
+  // 计算每列的最小宽度
+  const columnMinWidths = useMemo(() => {
+    const widths: { [key: string]: number } = {};
+
+    columns.forEach((col) => {
+      // 基础宽度：列名长度
+      let maxLength = col.length;
+
+      // 检查前10行数据的最大长度
+      contacts.slice(0, 10).forEach((contact) => {
+        const value = String(contact.rowData[col] || '');
+        maxLength = Math.max(maxLength, value.length);
+      });
+
+      // 计算宽度：每个字符约8px，中文字符约16px
+      // 最小120px，最大400px
+      const hasChineseChar =
+        /[\u4e00-\u9fa5]/.test(col) ||
+        contacts.some((c) =>
+          /[\u4e00-\u9fa5]/.test(String(c.rowData[col] || ''))
+        );
+      const charWidth = hasChineseChar ? 12 : 8;
+      const calculatedWidth = Math.min(
+        400,
+        Math.max(120, maxLength * charWidth + 24)
+      ); // +24 for padding
+
+      widths[col] = calculatedWidth;
+    });
+
+    return widths;
+  }, [columns, contacts]);
   // 计算自动合并的单元格
   const autoMergeRanges = useMemo(() => {
     if (!enableAutoMerge || contacts.length === 0) return [];
@@ -118,11 +150,11 @@ export default function ExcelTable({
   return (
     <div className='flex h-full w-full flex-col overflow-hidden bg-white'>
       {/* 表格区域 - 固定高度，内部滚动（支持横向滚动） */}
-      <div className='min-h-0 flex-1 overflow-auto overflow-x-auto'>
+      <div className='min-h-0 flex-1 overflow-auto'>
         {contacts.length > 0 && columns.length > 0 ? (
           <table
-            className='w-full min-w-max border-collapse border border-gray-300'
-            style={{ tableLayout: 'auto' }}
+            className='border-collapse border border-gray-300'
+            style={{ tableLayout: 'auto', minWidth: 'max-content' }}
           >
             <thead className='bg-gray-50'>
               <tr>
@@ -133,8 +165,11 @@ export default function ExcelTable({
                   <th
                     key={index}
                     className='border border-gray-300 px-3 py-2 text-left text-sm font-semibold'
+                    style={{ minWidth: `${columnMinWidths[column]}px` }}
                   >
-                    <div className='truncate'>{column}</div>
+                    <div className='truncate' title={column}>
+                      {column}
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -162,11 +197,12 @@ export default function ExcelTable({
                           'border border-gray-300 px-3 py-2 text-sm',
                           isMerged && 'bg-gray-50 text-center align-middle'
                         )}
+                        style={{ minWidth: `${columnMinWidths[column]}px` }}
                         title={contact.rowData[column] || ''}
                         {...mergeProps}
                       >
                         <div
-                          className={cn('truncate', !isMerged && 'max-w-xs')}
+                          className={cn('truncate', isMerged && 'text-center')}
                         >
                           {contact.rowData[column] || ''}
                         </div>
