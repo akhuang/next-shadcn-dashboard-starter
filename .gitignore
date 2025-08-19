@@ -52,3 +52,6 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Docker production environment
+# scripts/docker/.env.prod  # 示例配置文件，包含默认值，可以提交
