@@ -2,24 +2,36 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# 设置构建参数（用于代理）
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
+# 配置 npm 代理并安装依赖
+RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
+    if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy $HTTPS_PROXY; fi && \
+    npm config set strict-ssl false && \
+    npm install && \
+    npm config delete proxy && \
+    npm config delete https-proxy && \
+    npm config set strict-ssl true
 
 # Copy application code
 COPY . .
 
 # Create directory for Excel files
-RUN mkdir -p /data/excel-files
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('ioredis').createClient().ping().then(() => process.exit(0)).catch(() => process.exit(1))"
+RUN mkdir -p /data/excel-files && \
+    chown -R node:node /data/excel-files
 
 # Run as non-root user
 USER node
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "process.exit(0)"
 
 # Start the service
 CMD ["node", "index.js"]
