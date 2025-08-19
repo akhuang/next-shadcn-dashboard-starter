@@ -32,8 +32,8 @@ describe('/api/excel/v3 API Tests', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const module = await import('@/lib/excel-async-cache-service');
-    mockService = module.excelAsyncCacheService;
+    const excelModule = await import('@/lib/excel-async-cache-service');
+    mockService = excelModule.excelAsyncCacheService;
   });
 
   afterEach(() => {
