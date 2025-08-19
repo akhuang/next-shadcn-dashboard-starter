@@ -11,8 +11,10 @@ if (!fs.existsSync(outputDir)) {
 }
 
 // 清理现有文件
-const existingFiles = fs.readdirSync(outputDir).filter(f => f.endsWith('.xlsx'));
-existingFiles.forEach(file => {
+const existingFiles = fs
+  .readdirSync(outputDir)
+  .filter((f) => f.endsWith('.xlsx'));
+existingFiles.forEach((file) => {
   fs.unlinkSync(path.join(outputDir, file));
 });
 
@@ -21,33 +23,69 @@ console.log('🚀 开始生成统一的 Excel 测试数据...\n');
 // 工具函数：生成随机数据
 const utils = {
   randomName: () => {
-    const surnames = ['张', '李', '王', '赵', '刘', '陈', '杨', '黄', '周', '吴'];
+    const surnames = [
+      '张',
+      '李',
+      '王',
+      '赵',
+      '刘',
+      '陈',
+      '杨',
+      '黄',
+      '周',
+      '吴'
+    ];
     const names = ['明', '红', '强', '芳', '杰', '丽', '军', '敏', '涛', '静'];
-    return surnames[Math.floor(Math.random() * surnames.length)] + 
-           names[Math.floor(Math.random() * names.length)];
+    return (
+      surnames[Math.floor(Math.random() * surnames.length)] +
+      names[Math.floor(Math.random() * names.length)]
+    );
   },
-  
+
   randomCompany: () => {
-    const prefixes = ['阿里', '腾讯', '百度', '京东', '美团', '字节', '滴滴', '小米', '华为', '中兴'];
-    const suffixes = ['科技', '集团', '有限公司', '股份公司', '网络科技', '信息技术'];
-    return prefixes[Math.floor(Math.random() * prefixes.length)] + 
-           suffixes[Math.floor(Math.random() * suffixes.length)];
+    const prefixes = [
+      '阿里',
+      '腾讯',
+      '百度',
+      '京东',
+      '美团',
+      '字节',
+      '滴滴',
+      '小米',
+      '华为',
+      '中兴'
+    ];
+    const suffixes = [
+      '科技',
+      '集团',
+      '有限公司',
+      '股份公司',
+      '网络科技',
+      '信息技术'
+    ];
+    return (
+      prefixes[Math.floor(Math.random() * prefixes.length)] +
+      suffixes[Math.floor(Math.random() * suffixes.length)]
+    );
   },
-  
-  randomPhone: () => `138${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
-  
-  randomEmail: (name, domain = 'company.com') => `${name.toLowerCase()}@${domain}`,
-  
+
+  randomPhone: () =>
+    `138${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+
+  randomEmail: (name, domain = 'company.com') =>
+    `${name.toLowerCase()}@${domain}`,
+
   randomDate: (startYear = 2020, endYear = 2024) => {
-    const year = startYear + Math.floor(Math.random() * (endYear - startYear + 1));
+    const year =
+      startYear + Math.floor(Math.random() * (endYear - startYear + 1));
     const month = Math.floor(Math.random() * 12) + 1;
     const day = Math.floor(Math.random() * 28) + 1;
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   },
-  
-  randomAmount: (min = 1000, max = 100000) => 
+
+  randomAmount: (min = 1000, max = 100000) =>
     `${Math.floor(Math.random() * (max - min) + min).toLocaleString()}元`,
-  
+
   randomChoice: (arr) => arr[Math.floor(Math.random() * arr.length)]
 };
 
@@ -56,13 +94,47 @@ const generators = {
   // 客户信息数据
   customer: (count) => {
     const positions = ['CEO', 'CTO', 'VP', '总监', '经理', '主管', '专员'];
-    const industries = ['互联网', '金融', '制造业', '服务业', '教育', '医疗', '零售'];
-    const cities = ['北京', '上海', '广州', '深圳', '杭州', '成都', '南京', '武汉'];
+    const industries = [
+      '互联网',
+      '金融',
+      '制造业',
+      '服务业',
+      '教育',
+      '医疗',
+      '零售'
+    ];
+    const cities = [
+      '北京',
+      '上海',
+      '广州',
+      '深圳',
+      '杭州',
+      '成都',
+      '南京',
+      '武汉'
+    ];
     const levels = ['钻石', '白金', '黄金', '白银', '青铜'];
-    
-    const data = [['客户ID', '公司名称', '联系人', '职位', '手机', '固话', '邮箱', '所在城市', 
-                   '行业', '客户等级', '年营业额', '合作日期', '负责销售', '状态', '备注']];
-    
+
+    const data = [
+      [
+        '客户ID',
+        '公司名称',
+        '联系人',
+        '职位',
+        '手机',
+        '固话',
+        '邮箱',
+        '所在城市',
+        '行业',
+        '客户等级',
+        '年营业额',
+        '合作日期',
+        '负责销售',
+        '状态',
+        '备注'
+      ]
+    ];
+
     for (let i = 1; i <= count; i++) {
       const name = utils.randomName();
       const company = utils.randomCompany();
@@ -89,13 +161,35 @@ const generators = {
 
   // 供应商数据
   supplier: (count) => {
-    const categories = ['电子产品', '办公用品', '服装鞋帽', '食品饮料', '建筑材料', '化工原料'];
+    const categories = [
+      '电子产品',
+      '办公用品',
+      '服装鞋帽',
+      '食品饮料',
+      '建筑材料',
+      '化工原料'
+    ];
     const regions = ['华北', '华东', '华南', '西南', '东北', '西北'];
     const ratings = ['AAA', 'AA', 'A', 'BBB', 'BB', 'B'];
-    
-    const data = [['供应商ID', '供应商名称', '联系人', '联系电话', '传真', '地址', 
-                   '产品类别', '合作日期', '信用等级', '年供货额', '质量等级', '交货周期', '备注']];
-    
+
+    const data = [
+      [
+        '供应商ID',
+        '供应商名称',
+        '联系人',
+        '联系电话',
+        '传真',
+        '地址',
+        '产品类别',
+        '合作日期',
+        '信用等级',
+        '年供货额',
+        '质量等级',
+        '交货周期',
+        '备注'
+      ]
+    ];
+
     for (let i = 1; i <= count; i++) {
       const name = utils.randomName();
       const company = utils.randomCompany();
@@ -120,14 +214,47 @@ const generators = {
 
   // 员工数据
   employee: (count) => {
-    const departments = ['技术部', '市场部', '销售部', '人事部', '财务部', '运营部', '法务部'];
-    const positions = ['总监', '经理', '主管', '高级工程师', '工程师', '专员', '助理'];
+    const departments = [
+      '技术部',
+      '市场部',
+      '销售部',
+      '人事部',
+      '财务部',
+      '运营部',
+      '法务部'
+    ];
+    const positions = [
+      '总监',
+      '经理',
+      '主管',
+      '高级工程师',
+      '工程师',
+      '专员',
+      '助理'
+    ];
     const education = ['博士', '硕士', '本科', '大专', '高中'];
     const status = ['在职', '试用期', '离职', '停薪留职'];
-    
-    const data = [['员工ID', '姓名', '部门', '职位', '直属上级', '手机', '邮箱', '入职日期', 
-                   '转正日期', '学历', '毕业院校', '工作状态', '基本薪资', '绩效奖金', '备注']];
-    
+
+    const data = [
+      [
+        '员工ID',
+        '姓名',
+        '部门',
+        '职位',
+        '直属上级',
+        '手机',
+        '邮箱',
+        '入职日期',
+        '转正日期',
+        '学历',
+        '毕业院校',
+        '工作状态',
+        '基本薪资',
+        '绩效奖金',
+        '备注'
+      ]
+    ];
+
     for (let i = 1; i <= count; i++) {
       const name = utils.randomName();
       const joinDate = utils.randomDate(2018, 2024);
@@ -154,13 +281,42 @@ const generators = {
 
   // 产品数据
   product: (count) => {
-    const categories = ['电子设备', '办公用品', '家具用品', '软件服务', '咨询服务'];
-    const brands = ['自有品牌', '代理品牌A', '代理品牌B', '合作品牌', '第三方品牌'];
+    const categories = [
+      '电子设备',
+      '办公用品',
+      '家具用品',
+      '软件服务',
+      '咨询服务'
+    ];
+    const brands = [
+      '自有品牌',
+      '代理品牌A',
+      '代理品牌B',
+      '合作品牌',
+      '第三方品牌'
+    ];
     const status = ['在售', '预售', '停售', '缺货', '下架'];
-    
-    const data = [['产品ID', '产品名称', '产品类别', '品牌', '规格型号', '单价', '成本价', 
-                   '库存数量', '安全库存', '供应商', '上架日期', '销售状态', '月销量', '评分', '描述']];
-    
+
+    const data = [
+      [
+        '产品ID',
+        '产品名称',
+        '产品类别',
+        '品牌',
+        '规格型号',
+        '单价',
+        '成本价',
+        '库存数量',
+        '安全库存',
+        '供应商',
+        '上架日期',
+        '销售状态',
+        '月销量',
+        '评分',
+        '描述'
+      ]
+    ];
+
     for (let i = 1; i <= count; i++) {
       const category = utils.randomChoice(categories);
       data.push([
@@ -186,17 +342,47 @@ const generators = {
 
   // 订单数据
   order: (count) => {
-    const orderStatus = ['待付款', '已付款', '已发货', '已完成', '已取消', '退款中'];
-    const payMethods = ['支付宝', '微信支付', '银行转账', '现金', '支票', '信用卡'];
-    
-    const data = [['订单ID', '客户ID', '客户名称', '产品名称', '数量', '单价', '总金额', 
-                   '下单日期', '付款日期', '发货日期', '订单状态', '支付方式', '收货地址', '备注']];
-    
+    const orderStatus = [
+      '待付款',
+      '已付款',
+      '已发货',
+      '已完成',
+      '已取消',
+      '退款中'
+    ];
+    const payMethods = [
+      '支付宝',
+      '微信支付',
+      '银行转账',
+      '现金',
+      '支票',
+      '信用卡'
+    ];
+
+    const data = [
+      [
+        '订单ID',
+        '客户ID',
+        '客户名称',
+        '产品名称',
+        '数量',
+        '单价',
+        '总金额',
+        '下单日期',
+        '付款日期',
+        '发货日期',
+        '订单状态',
+        '支付方式',
+        '收货地址',
+        '备注'
+      ]
+    ];
+
     for (let i = 1; i <= count; i++) {
       const quantity = Math.floor(Math.random() * 100) + 1;
       const unitPrice = Math.floor(Math.random() * 1000) + 10;
       const totalAmount = quantity * unitPrice;
-      
+
       data.push([
         `ORD${String(i).padStart(8, '0')}`,
         `CUS${String(Math.floor(Math.random() * 1000) + 1).padStart(6, '0')}`,
@@ -224,13 +410,13 @@ const specialGenerators = {
   wideTable: () => {
     const headers = [];
     const data = [];
-    
+
     // 生成50列
     for (let i = 1; i <= 50; i++) {
       headers.push(`列${i}`);
     }
     data.push(headers);
-    
+
     // 生成100行数据
     for (let row = 1; row <= 100; row++) {
       const rowData = [];
@@ -245,7 +431,7 @@ const specialGenerators = {
   // 长表格（很多行）
   longTable: () => {
     const data = [['ID', '名称', '描述', '创建时间']];
-    
+
     // 生成5000行数据
     for (let i = 1; i <= 5000; i++) {
       data.push([
@@ -269,13 +455,13 @@ const specialGenerators = {
       ['销售部', '2000万', '400万', '2500万', '600万'],
       ['市场部', '800万', '150万', '900万', '200万']
     ];
-    
+
     return {
       data,
       merges: [
         { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // 标题合并
         { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } }, // 上半年
-        { s: { r: 2, c: 3 }, e: { r: 2, c: 4 } }, // 下半年
+        { s: { r: 2, c: 3 }, e: { r: 2, c: 4 } } // 下半年
       ]
     };
   },
@@ -291,8 +477,16 @@ const specialGenerators = {
       ['小数', '3.141592653589793', '高精度小数'],
       ['负数', '-123456.789', '负数测试'],
       ['特殊字符', '!@#$%^&*()_+-=[]{}|;:,.<>?', '特殊符号'],
-      ['中文', '这是一段很长的中文文本内容，用于测试中文字符的显示和处理能力。', '中文测试'],
-      ['英文', 'This is a very long English text content for testing the display and processing capabilities of English characters in Excel cells.', '英文测试'],
+      [
+        '中文',
+        '这是一段很长的中文文本内容，用于测试中文字符的显示和处理能力。',
+        '中文测试'
+      ],
+      [
+        '英文',
+        'This is a very long English text content for testing the display and processing capabilities of English characters in Excel cells.',
+        '英文测试'
+      ],
       ['日期', new Date().toISOString(), 'ISO日期格式'],
       ['布尔值', true, '布尔真值'],
       ['布尔值', false, '布尔假值'],
@@ -308,22 +502,24 @@ const specialGenerators = {
 function createExcelFile(filename, sheets) {
   const workbook = XLSX.utils.book_new();
   let totalRows = 0;
-  
+
   sheets.forEach(({ name, data, merges }) => {
     const worksheet = XLSX.utils.aoa_to_sheet(data);
-    
+
     // 如果有合并单元格信息
     if (merges) {
       worksheet['!merges'] = merges;
     }
-    
+
     XLSX.utils.book_append_sheet(workbook, worksheet, name);
     totalRows += data.length - 1; // 减去表头
   });
-  
+
   const filepath = path.join(outputDir, filename);
   XLSX.writeFile(workbook, filepath);
-  console.log(`✓ ${filename.padEnd(25)} - ${totalRows.toString().padStart(4)} 行数据`);
+  console.log(
+    `✓ ${filename.padEnd(25)} - ${totalRows.toString().padStart(4)} 行数据`
+  );
   return totalRows;
 }
 

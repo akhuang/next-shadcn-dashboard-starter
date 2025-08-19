@@ -2,7 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import chokidar from 'chokidar';
 import redis, { REDIS_KEYS, CACHE_TTL } from './redis';
-import { excelWorkerManager, CacheStatus, FileCacheStatus } from './excel-worker-manager';
+import {
+  excelWorkerManager,
+  CacheStatus,
+  FileCacheStatus
+} from './excel-worker-manager';
 import { Contact, ExcelData, SheetInfo, MergeRange } from '@/types/excel';
 
 interface CachedSheetInfo {
@@ -49,7 +53,7 @@ class ExcelAsyncCacheService {
   private async initializeAsync() {
     // Start watching immediately
     this.startWatching();
-    
+
     // Load files in background without blocking
     setImmediate(() => {
       this.loadAllExcelFilesAsync();
@@ -59,7 +63,7 @@ class ExcelAsyncCacheService {
   async setFolderPath(folderPath: string): Promise<string> {
     this.folderPath = folderPath;
     this.startWatching();
-    
+
     // Start async loading and return task ID
     const taskId = await this.loadAllExcelFilesAsync();
     return taskId;
@@ -103,7 +107,7 @@ class ExcelAsyncCacheService {
   private scheduleFileUpdate(filePaths: string[]) {
     if (this.reloadTimer) clearTimeout(this.reloadTimer);
     this.reloadTimer = setTimeout(async () => {
-      const fileNames = filePaths.map(fp => path.basename(fp));
+      const fileNames = filePaths.map((fp) => path.basename(fp));
       await excelWorkerManager.createCacheTask(this.folderPath, fileNames);
     }, 300);
   }
@@ -122,14 +126,17 @@ class ExcelAsyncCacheService {
     }
 
     const files = this.getAllExcelFiles(this.folderPath);
-    const fileNames = files.map(file => path.basename(file));
-    
+    const fileNames = files.map((file) => path.basename(file));
+
     // Create background task
-    const taskId = await excelWorkerManager.createCacheTask(this.folderPath, fileNames);
-    
+    const taskId = await excelWorkerManager.createCacheTask(
+      this.folderPath,
+      fileNames
+    );
+
     // Update file list immediately (without waiting for cache)
     await this.updateFileList(files);
-    
+
     this.isInitialized = true;
     return taskId;
   }
@@ -141,7 +148,7 @@ class ExcelAsyncCacheService {
       try {
         const stat = fs.statSync(file);
         const fileName = path.basename(file);
-        
+
         // Try to get sheets from cache, fallback to empty array
         let sheets: string[] = [];
         try {
@@ -152,7 +159,7 @@ class ExcelAsyncCacheService {
         } catch (error) {
           // Ignore cache errors
         }
-        
+
         fileInfoList.push({
           fileName,
           displayName: fileName.replace(/\.(xlsx|xls|xlsm)$/i, ''),
@@ -210,11 +217,41 @@ class ExcelAsyncCacheService {
   }
 
   async getFiles(): Promise<FileInfo[]> {
-    const filesJson = await redis.get(REDIS_KEYS.FILES);
-    if (filesJson) {
-      return JSON.parse(filesJson);
+    try {
+      const filesJson = await redis.get(REDIS_KEYS.FILES);
+      if (!filesJson) {
+        return [];
+      }
+
+      const files = JSON.parse(filesJson);
+
+      // For each file, get the sheets data from cache
+      const enrichedFiles = await Promise.all(
+        files.map(async (file: FileInfo) => {
+          try {
+            const sheetsJson = await redis.get(
+              REDIS_KEYS.FILE_SHEETS(file.fileName)
+            );
+            const sheets = sheetsJson ? JSON.parse(sheetsJson) : [];
+            return {
+              ...file,
+              sheets
+            };
+          } catch (error) {
+            console.error(`Error getting sheets for ${file.fileName}:`, error);
+            return {
+              ...file,
+              sheets: []
+            };
+          }
+        })
+      );
+
+      return enrichedFiles;
+    } catch (error) {
+      console.error('Error getting files:', error);
+      return [];
     }
-    return [];
   }
 
   async getFileSheets(fileName: string): Promise<string[]> {
@@ -229,7 +266,9 @@ class ExcelAsyncCacheService {
     fileName: string,
     sheetName: string
   ): Promise<CachedSheetInfo | null> {
-    const infoJson = await redis.get(REDIS_KEYS.SHEET_INFO(fileName, sheetName));
+    const infoJson = await redis.get(
+      REDIS_KEYS.SHEET_INFO(fileName, sheetName)
+    );
     if (infoJson) {
       return JSON.parse(infoJson);
     }
@@ -241,23 +280,34 @@ class ExcelAsyncCacheService {
     sheetName: string,
     page: number = 1,
     pageSize?: number
-  ): Promise<{ data: Contact[]; total: number; page: number; pageSize: number }> {
+  ): Promise<{
+    data: Contact[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
     const effectivePageSize = pageSize || this.pageSize;
-    
+
     // Get total rows
-    const totalStr = await redis.get(REDIS_KEYS.SHEET_TOTAL(fileName, sheetName));
+    const totalStr = await redis.get(
+      REDIS_KEYS.SHEET_TOTAL(fileName, sheetName)
+    );
     const total = totalStr ? parseInt(totalStr) : 0;
-    
+
     // Handle different page sizes
     if (effectivePageSize !== this.pageSize) {
       const startRow = (page - 1) * effectivePageSize;
       const endRow = Math.min(startRow + effectivePageSize, total);
-      
+
       const data: Contact[] = [];
       const startCachePage = Math.floor(startRow / this.pageSize) + 1;
       const endCachePage = Math.ceil(endRow / this.pageSize);
-      
-      for (let cachePage = startCachePage; cachePage <= endCachePage; cachePage++) {
+
+      for (
+        let cachePage = startCachePage;
+        cachePage <= endCachePage;
+        cachePage++
+      ) {
         const cacheDataJson = await redis.get(
           REDIS_KEYS.SHEET_DATA(fileName, sheetName, cachePage)
         );
@@ -266,11 +316,11 @@ class ExcelAsyncCacheService {
           data.push(...cacheData);
         }
       }
-      
-      const relativeStart = startRow - ((startCachePage - 1) * this.pageSize);
+
+      const relativeStart = startRow - (startCachePage - 1) * this.pageSize;
       const relativeEnd = relativeStart + effectivePageSize;
       const resultData = data.slice(relativeStart, relativeEnd);
-      
+
       return {
         data: resultData,
         total,
@@ -278,13 +328,13 @@ class ExcelAsyncCacheService {
         pageSize: effectivePageSize
       };
     }
-    
+
     // Use default page size
     const dataJson = await redis.get(
       REDIS_KEYS.SHEET_DATA(fileName, sheetName, page)
     );
     const data = dataJson ? JSON.parse(dataJson) : [];
-    
+
     return {
       data,
       total,
@@ -297,7 +347,12 @@ class ExcelAsyncCacheService {
     query: string,
     page: number = 1,
     pageSize: number = 50
-  ): Promise<{ data: Contact[]; total: number; page: number; pageSize: number }> {
+  ): Promise<{
+    data: Contact[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
     if (!query) {
       return { data: [], total: 0, page, pageSize };
     }

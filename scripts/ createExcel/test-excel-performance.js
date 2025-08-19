@@ -25,23 +25,25 @@ async function measurePerformance(name, fn) {
 // HTTP 请求函数
 function httpGet(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
+    https
+      .get(url, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(e);
+          }
+        });
+      })
+      .on('error', reject);
   });
 }
 
 async function testV1Performance() {
   console.log('\n📊 测试 V1 (原版本) 性能...\n');
-  
+
   // 获取所有数据
   await measurePerformance('获取所有数据', async () => {
     const result = await httpGet(`${API_BASE}?action=getData`);
@@ -54,36 +56,47 @@ async function testV1Performance() {
 
 async function testV2Performance() {
   console.log('\n📊 测试 V2 (Redis 优化版) 性能...\n');
-  
+
   // 获取文件列表
   const filesResult = await measurePerformance('获取文件列表', async () => {
     return await httpGet(`${API_BASE}/v2?action=getFiles`);
   });
-  
+
   if (filesResult.success && filesResult.result.data?.files?.length > 0) {
     const firstFile = filesResult.result.data.files[0];
-    
+
     // 获取sheets
-    const sheetsResult = await measurePerformance('获取Sheets列表', async () => {
-      return await httpGet(`${API_BASE}/v2?action=getSheets&fileName=${encodeURIComponent(firstFile.fileName)}`);
-    });
-    
+    const sheetsResult = await measurePerformance(
+      '获取Sheets列表',
+      async () => {
+        return await httpGet(
+          `${API_BASE}/v2?action=getSheets&fileName=${encodeURIComponent(firstFile.fileName)}`
+        );
+      }
+    );
+
     if (sheetsResult.success && sheetsResult.result.data?.length > 0) {
       const firstSheet = sheetsResult.result.data[0];
-      
+
       // 获取sheet信息
       await measurePerformance('获取Sheet信息', async () => {
-        return await httpGet(`${API_BASE}/v2?action=getSheetInfo&fileName=${encodeURIComponent(firstFile.fileName)}&sheetName=${encodeURIComponent(firstSheet)}`);
+        return await httpGet(
+          `${API_BASE}/v2?action=getSheetInfo&fileName=${encodeURIComponent(firstFile.fileName)}&sheetName=${encodeURIComponent(firstSheet)}`
+        );
       });
-      
+
       // 获取第一页数据
       await measurePerformance('获取第一页数据(100条)', async () => {
-        return await httpGet(`${API_BASE}/v2?action=getSheetData&fileName=${encodeURIComponent(firstFile.fileName)}&sheetName=${encodeURIComponent(firstSheet)}&page=1&pageSize=100`);
+        return await httpGet(
+          `${API_BASE}/v2?action=getSheetData&fileName=${encodeURIComponent(firstFile.fileName)}&sheetName=${encodeURIComponent(firstSheet)}&page=1&pageSize=100`
+        );
       });
-      
+
       // 测试搜索
       await measurePerformance('搜索数据', async () => {
-        return await httpGet(`${API_BASE}/v2?action=search&query=test&page=1&pageSize=50`);
+        return await httpGet(
+          `${API_BASE}/v2?action=search&query=test&page=1&pageSize=50`
+        );
       });
     }
   }
@@ -93,13 +106,13 @@ async function comparePerformance() {
   console.log('====================================');
   console.log('Excel 数据处理性能测试');
   console.log('====================================');
-  
+
   // 测试 V1
   await testV1Performance();
-  
+
   // 测试 V2
   await testV2Performance();
-  
+
   console.log('\n====================================');
   console.log('测试完成！');
   console.log('====================================');

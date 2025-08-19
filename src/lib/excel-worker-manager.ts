@@ -62,7 +62,7 @@ export class ExcelWorkerManager extends EventEmitter {
 
   async createCacheTask(folderPath: string, files: string[]): Promise<string> {
     const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const status: TaskStatus = {
       taskId,
       status: 'pending',
@@ -82,13 +82,13 @@ export class ExcelWorkerManager extends EventEmitter {
 
     this.tasks.set(taskId, task);
     this.taskQueue.push(taskId);
-    
+
     // Store status in Redis
     await this.saveTaskStatus(taskId, status);
-    
+
     // Try to process next task
     this.processNextTask();
-    
+
     return taskId;
   }
 
@@ -108,13 +108,21 @@ export class ExcelWorkerManager extends EventEmitter {
     await this.saveTaskStatus(taskId, task.status);
 
     // Create worker thread
-    const workerPath = path.join(__dirname, 'excel-worker.js');
-    
-    // If worker file doesn't exist, simulate processing
-    if (!fs.existsSync(workerPath)) {
+    // Try multiple possible paths for the worker file
+    const possiblePaths = [
+      path.join(__dirname, 'excel-worker.js'),
+      path.join(process.cwd(), 'src', 'lib', 'excel-worker.js'),
+      path.join(process.cwd(), 'lib', 'excel-worker.js')
+    ];
+
+    const workerPath = possiblePaths.find((p) => fs.existsSync(p));
+
+    if (!workerPath) {
+      console.log('Worker file not found, simulating processing...');
       // Simulate worker processing
       await this.simulateWorkerProcessing(task);
     } else {
+      console.log(`Using worker at: ${workerPath}`);
       const worker = new Worker(workerPath, {
         workerData: {
           taskId: task.taskId,
@@ -125,31 +133,36 @@ export class ExcelWorkerManager extends EventEmitter {
 
       task.worker = worker;
 
-      worker.on('message', async (msg) => {
-        if (msg.type === 'progress') {
-          await this.updateTaskProgress(taskId, {
+      worker.on('message', async (message) => {
+        if (message.type === 'progress') {
+          await this.updateTaskProgress(task.taskId, {
             status: 'processing',
-            progress: msg.progress,
-            total: msg.total,
-            currentFile: msg.currentFile
+            progress: message.progress,
+            total: message.total,
+            currentFile: message.currentFile
           });
-        } else if (msg.type === 'complete') {
-          await this.completeTask(taskId);
-        } else if (msg.type === 'error') {
-          await this.failTask(taskId, msg.error);
+        } else if (message.type === 'complete') {
+          await this.completeTask(task.taskId);
+          this.activeWorkers--;
+          this.processNextTask();
+        } else if (message.type === 'error') {
+          await this.failTask(task.taskId, message.error);
+          this.activeWorkers--;
+          this.processNextTask();
         }
       });
 
       worker.on('error', async (error) => {
-        await this.failTask(taskId, error.message);
+        console.error('Worker error:', error);
+        await this.failTask(task.taskId, error.message);
+        this.activeWorkers--;
+        this.processNextTask();
       });
 
       worker.on('exit', (code) => {
-        this.activeWorkers--;
-        if (code !== 0 && task.status.status !== 'completed' && task.status.status !== 'failed') {
-          this.failTask(taskId, `Worker stopped with exit code ${code}`);
+        if (code !== 0) {
+          console.error(`Worker stopped with exit code ${code}`);
         }
-        this.processNextTask();
       });
     }
   }
@@ -163,23 +176,26 @@ export class ExcelWorkerManager extends EventEmitter {
         total: task.files.length,
         currentFile: task.files[i]
       });
-      
+
       // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    
+
     await this.completeTask(task.taskId);
     this.activeWorkers--;
     this.processNextTask();
   }
 
-  async updateTaskProgress(taskId: string, updates: Partial<TaskStatus>): Promise<void> {
+  async updateTaskProgress(
+    taskId: string,
+    updates: Partial<TaskStatus>
+  ): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) return;
 
     Object.assign(task.status, updates);
     await this.saveTaskStatus(taskId, task.status);
-    
+
     this.emit('progress', {
       taskId,
       progress: task.status.progress,
@@ -195,10 +211,10 @@ export class ExcelWorkerManager extends EventEmitter {
     task.status.status = 'completed';
     task.status.endTime = new Date();
     task.status.currentFile = null;
-    
+
     await this.saveTaskStatus(taskId, task.status);
     this.completedTasks.add(taskId);
-    
+
     this.emit('complete', {
       taskId,
       status: 'completed'
@@ -212,10 +228,10 @@ export class ExcelWorkerManager extends EventEmitter {
     task.status.status = 'failed';
     task.status.error = error;
     task.status.endTime = new Date();
-    
+
     await this.saveTaskStatus(taskId, task.status);
     this.failedTasks.add(taskId);
-    
+
     this.emit('error', {
       taskId,
       error
@@ -233,7 +249,7 @@ export class ExcelWorkerManager extends EventEmitter {
     task.status.status = 'cancelled';
     task.status.endTime = new Date();
     await this.saveTaskStatus(taskId, task.status);
-    
+
     // Remove from queue if pending
     const queueIndex = this.taskQueue.indexOf(taskId);
     if (queueIndex !== -1) {
@@ -246,17 +262,20 @@ export class ExcelWorkerManager extends EventEmitter {
     if (task) {
       return task.status;
     }
-    
+
     // Try to get from Redis
     const statusJson = await redis.get(`excel:cache:status:${taskId}`);
     if (statusJson) {
       return JSON.parse(statusJson);
     }
-    
+
     return null;
   }
 
-  private async saveTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
+  private async saveTaskStatus(
+    taskId: string,
+    status: TaskStatus
+  ): Promise<void> {
     await redis.set(
       `excel:cache:status:${taskId}`,
       JSON.stringify(status),
@@ -267,7 +286,7 @@ export class ExcelWorkerManager extends EventEmitter {
 
   async getCacheStatus(): Promise<CacheStatus> {
     const lastUpdateStr = await redis.get('excel:last_update');
-    
+
     return {
       isUpdating: this.activeWorkers > 0,
       lastUpdate: lastUpdateStr ? new Date(lastUpdateStr) : null,
@@ -278,7 +297,10 @@ export class ExcelWorkerManager extends EventEmitter {
     };
   }
 
-  async setFileCacheStatus(fileName: string, status: FileCacheStatus): Promise<void> {
+  async setFileCacheStatus(
+    fileName: string,
+    status: FileCacheStatus
+  ): Promise<void> {
     await redis.set(
       `excel:file:${fileName}:cache_status`,
       JSON.stringify(status),
@@ -295,10 +317,13 @@ export class ExcelWorkerManager extends EventEmitter {
     return null;
   }
 
-  async isCacheStale(fileName: string, currentModified: Date): Promise<boolean> {
+  async isCacheStale(
+    fileName: string,
+    currentModified: Date
+  ): Promise<boolean> {
     const status = await this.getFileCacheStatus(fileName);
     if (!status) return true;
-    
+
     return new Date(status.lastModified).getTime() < currentModified.getTime();
   }
 

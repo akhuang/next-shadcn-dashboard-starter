@@ -26,23 +26,10 @@ export default function KBar({ children }: { children: React.ReactNode }) {
   const [contactsData, setContactsData] = useState<Contact[]>([]);
   const [isContactsPage, setIsContactsPage] = useState(false);
 
-  // 检测是否在联系人页面并获取联系人数据
+  // 仅检测是否在联系人页面；不再拉取旧接口，避免重复/错误请求
   useEffect(() => {
-    const isOnContactsPage = pathname?.includes('/contacts');
-    setIsContactsPage(isOnContactsPage || false);
-
-    if (isOnContactsPage) {
-      // 从全局或API获取联系人数据
-      fetch('/api/excel?action=getData')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.data?.contacts) {
-            setContactsData(data.data.contacts);
-          }
-        })
-        // eslint-disable-next-line no-console
-        .catch(() => {});
-    }
+    const isOnContactsPage = pathname === '/dashboard/contacts';
+    setIsContactsPage(isOnContactsPage);
   }, [pathname]);
 
   // These action are for the navigation
