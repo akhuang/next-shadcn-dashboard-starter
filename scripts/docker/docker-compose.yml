@@ -41,6 +41,9 @@ services:
       - ../../uploads:/app/uploads
       # Excel 文件监控目录（简单映射）
       - ./excel-data:/tmp/test-contacts
+    ports:
+      # 可选：直接暴露 Next.js 端口（绕过 Nginx）
+      - '${NEXTJS_PORT:-3000}:3000'
     expose:
       - '3000'
     healthcheck:
