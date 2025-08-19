@@ -1,0 +1,20 @@
+{
+  "name": "excel-monitor-service",
+  "version": "1.0.0",
+  "description": "Independent service for monitoring Excel files and updating Redis cache",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node -r dotenv/config index.js dotenv_config_path=.env.development",
+    "dev:watch": "nodemon -r dotenv/config index.js dotenv_config_path=.env.development"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "ioredis": "^5.3.2",
+    "chokidar": "^3.5.3",
+    "dotenv": "^16.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

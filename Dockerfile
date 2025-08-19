@@ -111,6 +111,8 @@ COPY --from=builder /app/.next/static ./.next/static
 # 如果使用 Sharp 进行图片优化（已在 package.json 中安装）
 COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
 
+# Note: Worker Thread functionality has been moved to a separate service
+
 # 设置正确的权限
 RUN chown -R nextjs:nodejs /app
 

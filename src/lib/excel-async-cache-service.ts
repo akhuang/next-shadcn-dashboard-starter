@@ -1,12 +1,4 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import chokidar from 'chokidar';
-import redis, { REDIS_KEYS, CACHE_TTL } from './redis';
-import {
-  excelWorkerManager,
-  CacheStatus,
-  FileCacheStatus
-} from './excel-worker-manager';
+import redis, { REDIS_KEYS } from './redis';
 import { Contact, ExcelData, SheetInfo, MergeRange } from '@/types/excel';
 
 interface CachedSheetInfo {
@@ -25,418 +17,337 @@ interface FileInfo {
   size: number;
 }
 
+interface CacheStatus {
+  isUpdating: boolean;
+  lastUpdate: Date | null;
+  pendingTasks: number;
+  activeTasks: number;
+  completedTasks: number;
+  failedTasks?: number;
+}
+
+interface ServiceStatus {
+  status: string;
+  lastUpdate: Date | null;
+  filesProcessed: number;
+  currentFile: string | null;
+  errors: any[];
+  uptime?: number;
+  memoryUsage?: any;
+  timestamp?: string;
+}
+
 class ExcelAsyncCacheService {
-  private folderPath: string = '';
-  private watcher: any = null;
-  private reloadTimer: NodeJS.Timeout | null = null;
   private pageSize: number = 100;
-  private isInitialized: boolean = false;
 
-  constructor() {
-    try {
-      const envPath = process.env.EXCEL_WATCH_DIR;
-      if (envPath && fs.existsSync(envPath)) {
-        this.folderPath = envPath;
-        this.initializeAsync();
-      }
-    } catch {
-      // ignore env init errors
-    }
-
-    // Listen to worker manager events
-    excelWorkerManager.on('complete', async () => {
-      // Notify that cache has been updated
-      await this.updateGlobalCacheStatus();
-    });
-  }
-
-  private async initializeAsync() {
-    // Start watching immediately
-    this.startWatching();
-
-    // Load files in background without blocking
-    setImmediate(() => {
-      this.loadAllExcelFilesAsync();
-    });
-  }
-
-  async setFolderPath(folderPath: string): Promise<string> {
-    this.folderPath = folderPath;
-    this.startWatching();
-
-    // Start async loading and return task ID
-    const taskId = await this.loadAllExcelFilesAsync();
-    return taskId;
-  }
-
-  private startWatching() {
-    if (this.watcher) {
-      this.watcher.close();
-    }
-
-    if (!this.folderPath || !fs.existsSync(this.folderPath)) {
-      return;
-    }
-
-    const usePolling = process.env.EXCEL_WATCH_POLLING === 'true';
-    const pollInterval = process.env.EXCEL_WATCH_INTERVAL
-      ? Number(process.env.EXCEL_WATCH_INTERVAL)
-      : undefined;
-
-    this.watcher = chokidar.watch(
-      path.join(this.folderPath, '**/*.{xlsx,xls,xlsm}'),
-      {
-        persistent: true,
-        ignoreInitial: true,
-        ignored: (watchedPath: string) => {
-          const base = path.basename(watchedPath);
-          return base.startsWith('~$') || base.startsWith('._');
-        },
-        awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 100 },
-        usePolling,
-        interval: pollInterval
-      }
-    );
-
-    this.watcher
-      .on('add', (filePath: string) => this.scheduleFileUpdate([filePath]))
-      .on('change', (filePath: string) => this.scheduleFileUpdate([filePath]))
-      .on('unlink', () => this.scheduleReload());
-  }
-
-  private scheduleFileUpdate(filePaths: string[]) {
-    if (this.reloadTimer) clearTimeout(this.reloadTimer);
-    this.reloadTimer = setTimeout(async () => {
-      const fileNames = filePaths.map((fp) => path.basename(fp));
-      await excelWorkerManager.createCacheTask(this.folderPath, fileNames);
-    }, 300);
-  }
-
-  private scheduleReload() {
-    if (this.reloadTimer) clearTimeout(this.reloadTimer);
-    this.reloadTimer = setTimeout(() => {
-      this.loadAllExcelFilesAsync();
-    }, 300);
-  }
-
-  private async loadAllExcelFilesAsync(): Promise<string> {
-    if (!this.folderPath || !fs.existsSync(this.folderPath)) {
-      await this.clearCache();
-      return '';
-    }
-
-    const files = this.getAllExcelFiles(this.folderPath);
-    const fileNames = files.map((file) => path.basename(file));
-
-    // Create background task
-    const taskId = await excelWorkerManager.createCacheTask(
-      this.folderPath,
-      fileNames
-    );
-
-    // Update file list immediately (without waiting for cache)
-    await this.updateFileList(files);
-
-    this.isInitialized = true;
-    return taskId;
-  }
-
-  private async updateFileList(files: string[]) {
-    const fileInfoList: FileInfo[] = [];
-
-    for (const file of files) {
-      try {
-        const stat = fs.statSync(file);
-        const fileName = path.basename(file);
-
-        // Try to get sheets from cache, fallback to empty array
-        let sheets: string[] = [];
-        try {
-          const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
-          if (sheetsJson) {
-            sheets = JSON.parse(sheetsJson);
-          }
-        } catch (error) {
-          // Ignore cache errors
-        }
-
-        fileInfoList.push({
-          fileName,
-          displayName: fileName.replace(/\.(xlsx|xls|xlsm)$/i, ''),
-          sheets,
-          lastModified: stat.mtime,
-          size: stat.size
-        });
-
-        // Update file cache status
-        await excelWorkerManager.setFileCacheStatus(fileName, {
-          cached: sheets.length > 0,
-          lastModified: stat.mtime,
-          size: stat.size,
-          sheets
-        });
-      } catch (error) {
-        console.error(`Error processing file ${file}:`, error);
-      }
-    }
-
-    // Store file list
-    await redis.set(
-      REDIS_KEYS.FILES,
-      JSON.stringify(fileInfoList),
-      'EX',
-      CACHE_TTL.DEFAULT
-    );
-  }
-
-  private getAllExcelFiles(dir: string): string[] {
-    const files: string[] = [];
-
-    function walk(currentDir: string) {
-      try {
-        const items = fs.readdirSync(currentDir);
-        for (const item of items) {
-          const fullPath = path.join(currentDir, item);
-          const stat = fs.statSync(fullPath);
-
-          if (stat.isDirectory()) {
-            walk(fullPath);
-          } else if (stat.isFile() && /\.(xlsx|xls|xlsm)$/i.test(item)) {
-            const base = path.basename(item);
-            if (base.startsWith('~$') || base.startsWith('._')) continue;
-            files.push(fullPath);
-          }
-        }
-      } catch (error) {
-        // ignore directory read errors
-      }
-    }
-
-    walk(dir);
-    return files;
-  }
-
-  async getFiles(): Promise<FileInfo[]> {
+  // Get all available files from Redis
+  async getAvailableFiles(): Promise<FileInfo[]> {
     try {
       const filesJson = await redis.get(REDIS_KEYS.FILES);
-      if (!filesJson) {
-        return [];
+      if (!filesJson) return [];
+
+      const fileNames = JSON.parse(filesJson) as string[];
+      const fileInfos: FileInfo[] = [];
+
+      for (const fileName of fileNames) {
+        const statusJson = await redis.get(
+          `excel:file:${fileName}:cache_status`
+        );
+        if (statusJson) {
+          const status = JSON.parse(statusJson);
+          fileInfos.push({
+            fileName,
+            displayName: fileName,
+            sheets: status.sheets || [],
+            lastModified: new Date(status.lastModified),
+            size: status.size || 0
+          });
+        }
       }
 
-      const files = JSON.parse(filesJson);
-
-      // For each file, get the sheets data from cache
-      const enrichedFiles = await Promise.all(
-        files.map(async (file: FileInfo) => {
-          try {
-            const sheetsJson = await redis.get(
-              REDIS_KEYS.FILE_SHEETS(file.fileName)
-            );
-            const sheets = sheetsJson ? JSON.parse(sheetsJson) : [];
-            return {
-              ...file,
-              sheets
-            };
-          } catch (error) {
-            console.error(`Error getting sheets for ${file.fileName}:`, error);
-            return {
-              ...file,
-              sheets: []
-            };
-          }
-        })
-      );
-
-      return enrichedFiles;
+      return fileInfos;
     } catch (error) {
-      console.error('Error getting files:', error);
+      console.error('Error getting available files:', error);
       return [];
     }
   }
 
-  async getFileSheets(fileName: string): Promise<string[]> {
-    const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
-    if (sheetsJson) {
-      return JSON.parse(sheetsJson);
-    }
-    return [];
-  }
-
+  // Get sheet info from Redis
   async getSheetInfo(
     fileName: string,
     sheetName: string
-  ): Promise<CachedSheetInfo | null> {
-    const infoJson = await redis.get(
-      REDIS_KEYS.SHEET_INFO(fileName, sheetName)
-    );
-    if (infoJson) {
-      return JSON.parse(infoJson);
+  ): Promise<SheetInfo | null> {
+    try {
+      const infoJson = await redis.get(
+        REDIS_KEYS.SHEET_INFO(fileName, sheetName)
+      );
+      if (!infoJson) return null;
+
+      const cachedInfo = JSON.parse(infoJson) as CachedSheetInfo;
+
+      return {
+        name: cachedInfo.name,
+        columns: cachedInfo.columns,
+        mergeRanges: cachedInfo.mergeRanges,
+        title: cachedInfo.title,
+        contacts: [] // Add empty contacts array for compatibility
+      };
+    } catch (error) {
+      console.error('Error getting sheet info:', error);
+      return null;
     }
-    return null;
   }
 
+  // Get sheet names for a file
+  async getFileSheets(fileName: string): Promise<string[]> {
+    try {
+      const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
+      if (!sheetsJson) return [];
+      return JSON.parse(sheetsJson) as string[];
+    } catch (error) {
+      console.error('Error getting file sheets:', error);
+      return [];
+    }
+  }
+
+  // Get paginated data from Redis
+  async getPaginatedData(
+    fileName: string,
+    sheetName: string,
+    page: number = 1,
+    pageSize?: number
+  ): Promise<{ data: Contact[]; total: number; hasMore: boolean }> {
+    try {
+      const size = pageSize || this.pageSize;
+
+      // Get cached data
+      const dataJson = await redis.get(
+        REDIS_KEYS.SHEET_DATA(fileName, sheetName, page)
+      );
+      if (!dataJson) {
+        return { data: [], total: 0, hasMore: false };
+      }
+
+      const cachedData = JSON.parse(dataJson) as Contact[];
+
+      // Get total count
+      const totalStr = await redis.get(
+        REDIS_KEYS.SHEET_TOTAL(fileName, sheetName)
+      );
+      const total = totalStr ? parseInt(totalStr, 10) : cachedData.length;
+
+      const hasMore = page * size < total;
+
+      return {
+        data: cachedData,
+        total,
+        hasMore
+      };
+    } catch (error) {
+      console.error('Error getting paginated data:', error);
+      return { data: [], total: 0, hasMore: false };
+    }
+  }
+
+  // Search contacts across all cached data
+  async searchContacts(
+    query: string,
+    page: number = 1,
+    pageSize: number = 50
+  ): Promise<{ data: Contact[]; total: number; hasMore: boolean }> {
+    try {
+      const allResults: Contact[] = [];
+      const searchQuery = query.toLowerCase();
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+
+      // Get all files
+      const filesJson = await redis.get(REDIS_KEYS.FILES);
+      if (!filesJson) return { data: [], total: 0, hasMore: false };
+
+      const files = JSON.parse(filesJson) as string[];
+
+      // First, collect all matching results
+      for (const fileName of files) {
+        const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
+        if (!sheetsJson) continue;
+
+        const sheets = JSON.parse(sheetsJson) as string[];
+
+        for (const sheetName of sheets) {
+          // Search through all pages
+          let sheetPage = 1;
+          let hasMore = true;
+
+          while (hasMore) {
+            const dataJson = await redis.get(
+              REDIS_KEYS.SHEET_DATA(fileName, sheetName, sheetPage)
+            );
+            if (!dataJson) {
+              hasMore = false;
+              break;
+            }
+
+            const pageData = JSON.parse(dataJson) as Contact[];
+
+            for (const contact of pageData) {
+              if (
+                contact.searchableText &&
+                contact.searchableText.includes(searchQuery)
+              ) {
+                allResults.push(contact);
+              }
+            }
+
+            sheetPage++;
+          }
+        }
+      }
+
+      // Apply pagination
+      const paginatedResults = allResults.slice(startIndex, endIndex);
+      const hasMore = endIndex < allResults.length;
+
+      return {
+        data: paginatedResults,
+        total: allResults.length,
+        hasMore
+      };
+    } catch (error) {
+      console.error('Error searching contacts:', error);
+      return { data: [], total: 0, hasMore: false };
+    }
+  }
+
+  // Get cache status from Redis
+  async getCacheStatus(): Promise<CacheStatus> {
+    try {
+      // Try to get service status first
+      const serviceStatusJson = await redis.get('excel:cache:status');
+      if (serviceStatusJson) {
+        const serviceStatus = JSON.parse(serviceStatusJson) as ServiceStatus;
+        return {
+          isUpdating: serviceStatus.status === 'processing',
+          lastUpdate: serviceStatus.lastUpdate
+            ? new Date(serviceStatus.lastUpdate)
+            : null,
+          pendingTasks: 0,
+          activeTasks: serviceStatus.status === 'processing' ? 1 : 0,
+          completedTasks: serviceStatus.filesProcessed || 0,
+          failedTasks: serviceStatus.errors?.length || 0
+        };
+      }
+
+      // Fallback to last update time
+      const lastUpdateStr = await redis.get(REDIS_KEYS.LAST_UPDATE);
+      return {
+        isUpdating: false,
+        lastUpdate: lastUpdateStr ? new Date(lastUpdateStr) : null,
+        pendingTasks: 0,
+        activeTasks: 0,
+        completedTasks: 0,
+        failedTasks: 0
+      };
+    } catch (error) {
+      console.error('Error getting cache status:', error);
+      return {
+        isUpdating: false,
+        lastUpdate: null,
+        pendingTasks: 0,
+        activeTasks: 0,
+        completedTasks: 0,
+        failedTasks: 0
+      };
+    }
+  }
+
+  // Get service status
+  async getServiceStatus(): Promise<ServiceStatus | null> {
+    try {
+      const statusJson = await redis.get('excel:cache:status');
+      if (!statusJson) return null;
+      return JSON.parse(statusJson) as ServiceStatus;
+    } catch (error) {
+      console.error('Error getting service status:', error);
+      return null;
+    }
+  }
+
+  // Check if cache is available
+  async isCacheAvailable(): Promise<boolean> {
+    try {
+      await redis.ping();
+
+      // Check if service is running
+      const statusJson = await redis.get('excel:cache:status');
+      if (!statusJson) return false;
+
+      const status = JSON.parse(statusJson) as ServiceStatus;
+      const statusTime = new Date(status.timestamp || '');
+      const now = new Date();
+
+      // Check if status is recent (within last minute)
+      const timeDiff = now.getTime() - statusTime.getTime();
+      return timeDiff < 60000; // 1 minute
+    } catch (error) {
+      console.error('Error checking cache availability:', error);
+      return false;
+    }
+  }
+
+  // Get files (wrapper for getAvailableFiles)
+  async getFiles() {
+    return this.getAvailableFiles();
+  }
+
+  // Get last update time
+  async getLastUpdate(): Promise<Date | null> {
+    try {
+      const lastUpdateStr = await redis.get(REDIS_KEYS.LAST_UPDATE);
+      return lastUpdateStr ? new Date(lastUpdateStr) : null;
+    } catch (error) {
+      console.error('Error getting last update:', error);
+      return null;
+    }
+  }
+
+  // Get sheet data (wrapper for getPaginatedData)
   async getSheetData(
     fileName: string,
     sheetName: string,
     page: number = 1,
     pageSize?: number
-  ): Promise<{
-    data: Contact[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }> {
-    const effectivePageSize = pageSize || this.pageSize;
+  ) {
+    return this.getPaginatedData(fileName, sheetName, page, pageSize);
+  }
 
-    // Get total rows
-    const totalStr = await redis.get(
-      REDIS_KEYS.SHEET_TOTAL(fileName, sheetName)
-    );
-    const total = totalStr ? parseInt(totalStr) : 0;
-
-    // Handle different page sizes
-    if (effectivePageSize !== this.pageSize) {
-      const startRow = (page - 1) * effectivePageSize;
-      const endRow = Math.min(startRow + effectivePageSize, total);
-
-      const data: Contact[] = [];
-      const startCachePage = Math.floor(startRow / this.pageSize) + 1;
-      const endCachePage = Math.ceil(endRow / this.pageSize);
-
-      for (
-        let cachePage = startCachePage;
-        cachePage <= endCachePage;
-        cachePage++
-      ) {
-        const cacheDataJson = await redis.get(
-          REDIS_KEYS.SHEET_DATA(fileName, sheetName, cachePage)
-        );
-        if (cacheDataJson) {
-          const cacheData = JSON.parse(cacheDataJson) as Contact[];
-          data.push(...cacheData);
-        }
-      }
-
-      const relativeStart = startRow - (startCachePage - 1) * this.pageSize;
-      const relativeEnd = relativeStart + effectivePageSize;
-      const resultData = data.slice(relativeStart, relativeEnd);
-
-      return {
-        data: resultData,
-        total,
-        page,
-        pageSize: effectivePageSize
-      };
-    }
-
-    // Use default page size
-    const dataJson = await redis.get(
-      REDIS_KEYS.SHEET_DATA(fileName, sheetName, page)
-    );
-    const data = dataJson ? JSON.parse(dataJson) : [];
-
+  // Get task status (placeholder for now)
+  async getTaskStatus(taskId: string): Promise<any> {
+    // Since we don't have worker manager anymore, return a mock status
     return {
-      data,
-      total,
-      page,
-      pageSize: effectivePageSize
+      taskId,
+      status: 'completed',
+      progress: 100,
+      total: 100,
+      currentFile: null,
+      error: null
     };
   }
 
-  async searchContacts(
-    query: string,
-    page: number = 1,
-    pageSize: number = 50
-  ): Promise<{
-    data: Contact[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }> {
-    if (!query) {
-      return { data: [], total: 0, page, pageSize };
-    }
-
-    const searchTerm = query.toLowerCase();
-    const files = await this.getFiles();
-    const allMatches: Contact[] = [];
-
-    for (const file of files) {
-      for (const sheetName of file.sheets) {
-        const total = await redis.get(
-          REDIS_KEYS.SHEET_TOTAL(file.fileName, sheetName)
-        );
-        const totalRows = total ? parseInt(total) : 0;
-        const totalPages = Math.ceil(totalRows / this.pageSize);
-
-        for (let p = 1; p <= totalPages; p++) {
-          const dataJson = await redis.get(
-            REDIS_KEYS.SHEET_DATA(file.fileName, sheetName, p)
-          );
-          if (dataJson) {
-            const pageData = JSON.parse(dataJson) as Contact[];
-            const matches = pageData.filter((contact) =>
-              contact.searchableText.includes(searchTerm)
-            );
-            allMatches.push(...matches);
-          }
-        }
-      }
-    }
-
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const paginatedData = allMatches.slice(start, end);
-
-    return {
-      data: paginatedData,
-      total: allMatches.length,
-      page,
-      pageSize
-    };
+  // Set folder path (placeholder for now)
+  async setFolderPath(folderPath: string): Promise<string> {
+    // Return a mock task ID
+    return `task_${Date.now()}`;
   }
 
-  async getLastUpdate(): Promise<Date | null> {
-    const dateStr = await redis.get(REDIS_KEYS.LAST_UPDATE);
-    return dateStr ? new Date(dateStr) : null;
-  }
-
-  async getCacheStatus(): Promise<CacheStatus & { isInitialized: boolean }> {
-    const workerStatus = await excelWorkerManager.getCacheStatus();
-    return {
-      ...workerStatus,
-      isInitialized: this.isInitialized
-    };
-  }
-
-  async getTaskStatus(taskId: string) {
-    return await excelWorkerManager.getTaskStatus(taskId);
-  }
-
-  private async updateGlobalCacheStatus() {
-    const status = await this.getCacheStatus();
-    await redis.set(
-      REDIS_KEYS.CACHE_GLOBAL_STATUS,
-      JSON.stringify(status),
-      'EX',
-      CACHE_TTL.DEFAULT
+  // Trigger refresh (for future use with message queue)
+  async triggerRefresh(): Promise<void> {
+    // In future, this could send a message to the service to trigger refresh
+    console.log(
+      'Refresh trigger not implemented - service monitors files automatically'
     );
-  }
-
-  private async clearCache(): Promise<void> {
-    const keys = await redis.keys('excel:*');
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
-  }
-
-  destroy() {
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = null;
-    }
-    excelWorkerManager.destroy();
   }
 }
 
+// Export singleton instance
 export const excelAsyncCacheService = new ExcelAsyncCacheService();
