@@ -19,30 +19,45 @@ if (isBuilding) {
   });
 } else {
   // Create real Redis connection
+  const redisHost = process.env.REDIS_HOST || 'localhost';
+  const redisPort = parseInt(process.env.REDIS_PORT || '6379');
+  const redisPassword = process.env.REDIS_PASSWORD;
+  const redisDb = parseInt(process.env.REDIS_DB || '0');
+
+  console.log(
+    `Initializing Redis connection to ${redisHost}:${redisPort} (DB: ${redisDb})`
+  );
+
   redis = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_DB || '0'),
+    host: redisHost,
+    port: redisPort,
+    password: redisPassword,
+    db: redisDb,
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
+      console.log(`Redis retry attempt ${times}, waiting ${delay}ms`);
       return delay;
     },
     maxRetriesPerRequest: 3,
-    lazyConnect: true // Don't connect immediately
+    // Remove lazyConnect to establish connection immediately
+    connectTimeout: 10000,
+    commandTimeout: 5000
   });
 
   redis.on('connect', () => {
-    console.log('Redis connected successfully');
+    console.log(`Redis connected successfully to ${redisHost}:${redisPort}`);
   });
 
   redis.on('error', (err) => {
-    console.error('Redis connection error:', err);
+    console.error(`Redis connection error (${redisHost}:${redisPort}):`, err);
   });
 
-  // Ensure connection is established when first used
   redis.on('ready', () => {
-    console.log('Redis ready to accept commands');
+    console.log(`Redis ready to accept commands at ${redisHost}:${redisPort}`);
+  });
+
+  redis.on('reconnecting', (delay) => {
+    console.log(`Redis reconnecting in ${delay}ms`);
   });
 }
 
