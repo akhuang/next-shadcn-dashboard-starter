@@ -56,7 +56,7 @@ if (isBuilding) {
     console.log(`Redis ready to accept commands at ${redisHost}:${redisPort}`);
   });
 
-  redis.on('reconnecting', (delay) => {
+  redis.on('reconnecting', (delay: number) => {
     console.log(`Redis reconnecting in ${delay}ms`);
   });
 }
