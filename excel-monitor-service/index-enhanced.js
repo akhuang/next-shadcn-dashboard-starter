@@ -336,16 +336,14 @@ async function processNavigationFile(fileInfo, config) {
   // Store in Redis
   await redis.set(
     NAVIGATION_REDIS_KEYS.DATA,
-    JSON.stringify(categories),
-    'EX',
-    CACHE_TTL.NAVIGATION
+    JSON.stringify(categories)
+    // 移除 TTL - 缓存永久有效，仅在文件更新时刷新
   );
 
   await redis.set(
     NAVIGATION_REDIS_KEYS.LAST_UPDATE,
-    new Date().toISOString(),
-    'EX',
-    CACHE_TTL.NAVIGATION
+    new Date().toISOString()
+    // 移除 TTL
   );
 
   await redis.set(
@@ -357,9 +355,8 @@ async function processNavigationFile(fileInfo, config) {
       itemCount: jsonData.length,
       categoryCount: categories.length,
       cached: true
-    }),
-    'EX',
-    CACHE_TTL.NAVIGATION
+    })
+    // 移除 TTL
   );
 
   console.log(
@@ -417,17 +414,15 @@ async function processContactFile(fileInfo, config) {
 
       await redis.set(
         CONTACT_REDIS_KEYS.SHEET_DATA(fileName, sheetName, page),
-        JSON.stringify(pageData),
-        'EX',
-        CACHE_TTL.SHEET_DATA
+        JSON.stringify(pageData)
+        // 移除 TTL - 缓存永久有效，仅在文件更新时刷新
       );
     }
 
     await redis.set(
       CONTACT_REDIS_KEYS.SHEET_TOTAL(fileName, sheetName),
-      processedData.length,
-      'EX',
-      CACHE_TTL.DEFAULT
+      processedData.length
+      // 移除 TTL
     );
 
     console.log(
@@ -438,9 +433,8 @@ async function processContactFile(fileInfo, config) {
   // Store file metadata
   await redis.set(
     CONTACT_REDIS_KEYS.FILE_SHEETS(fileName),
-    JSON.stringify(sheetNames),
-    'EX',
-    CACHE_TTL.DEFAULT
+    JSON.stringify(sheetNames)
+    // 移除 TTL - 缓存永久有效，仅在文件更新时刷新
   );
 
   await redis.set(
@@ -450,9 +444,8 @@ async function processContactFile(fileInfo, config) {
       lastModified: modifiedTime,
       size: size,
       sheets: sheetNames
-    }),
-    'EX',
-    CACHE_TTL.DEFAULT
+    })
+    // 移除 TTL
   );
 
   console.log(`[contacts] Completed processing: ${fileName}`);

@@ -157,7 +157,14 @@ class ExcelAsyncCacheService {
   ): Promise<{ data: Contact[]; total: number; hasMore: boolean }> {
     try {
       const allResults: Contact[] = [];
-      const searchQuery = query.toLowerCase();
+      // Trim and lowercase the search query
+      const searchQuery = query.trim().toLowerCase();
+
+      // If search query is empty after trim, return empty results
+      if (!searchQuery) {
+        return { data: [], total: 0, hasMore: false };
+      }
+
       const startIndex = (page - 1) * pageSize;
       const endIndex = startIndex + pageSize;
 

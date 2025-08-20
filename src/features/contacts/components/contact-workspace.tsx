@@ -254,7 +254,8 @@ export default function ContactWorkspace() {
 
   // 执行搜索
   const performSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
       setSearchResults(null);
       return;
     }
@@ -262,7 +263,7 @@ export default function ContactWorkspace() {
     setSearchLoading(true);
     try {
       const response = await fetch(
-        `/api/excel/v3?action=search&query=${encodeURIComponent(query)}&page=1&pageSize=100`
+        `/api/excel/v3?action=search&query=${encodeURIComponent(trimmedQuery)}&page=1&pageSize=100`
       );
       const result = await response.json();
 
