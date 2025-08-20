@@ -7,7 +7,7 @@ import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import { PlausibleScript } from '@/components/analytics/plausible-script';
+import { PostHogAnalytics } from '@/components/analytics/posthog-provider';
 import './globals.css';
 import './theme.css';
 
@@ -66,7 +66,7 @@ export default async function RootLayout({
         )}
       >
         <NextTopLoader showSpinner={false} />
-        <PlausibleScript />
+        <PostHogAnalytics />
         <NuqsAdapter>
           <ThemeProvider
             attribute='class'

@@ -1,22 +1,13 @@
+'use client';
+
 /**
- * Plausible Analytics 自定义事件追踪
+ * PostHog 事件追踪工具
  * 用于追踪用户交互、转化等自定义事件
  */
-
-declare global {
-  interface Window {
-    plausible?: (
-      eventName: string,
-      options?: {
-        props?: Record<string, string | number | boolean>;
-        callback?: () => void;
-      }
-    ) => void;
-  }
-}
+import posthog from 'posthog-js';
 
 /**
- * 发送自定义事件到 Plausible
+ * 发送自定义事件到 PostHog
  * @param eventName 事件名称
  * @param props 事件属性（可选）
  * @param callback 事件发送后的回调（可选）
@@ -26,23 +17,23 @@ export function trackEvent(
   props?: Record<string, string | number | boolean>,
   callback?: () => void
 ) {
-  // 确保 Plausible 已加载
-  if (typeof window !== 'undefined' && window.plausible) {
-    window.plausible(eventName, {
-      props,
-      callback
-    });
-  } else if (callback) {
-    // 如果 Plausible 未加载，直接执行回调
-    callback();
+  if (typeof window === 'undefined') return;
+  try {
+    posthog.capture(eventName, props as Record<string, any> | undefined);
+    if (callback) callback();
+  } catch (_) {
+    if (callback) callback();
   }
 }
 
 /**
- * 追踪页面浏览（Plausible 默认会自动追踪，这个方法用于手动触发）
+ * 追踪页面浏览（PostHog 也支持自动采集，这里为手动触发）
  */
 export function trackPageview() {
-  trackEvent('pageview');
+  if (typeof window === 'undefined') return;
+  try {
+    posthog.capture('$pageview');
+  } catch (_) {}
 }
 
 /**
@@ -50,7 +41,7 @@ export function trackPageview() {
  * @param url 外链 URL
  */
 export function trackOutboundLink(url: string) {
-  trackEvent('Outbound Link: Click', { url });
+  trackEvent('outbound_link_click', { url });
 }
 
 /**
@@ -58,7 +49,7 @@ export function trackOutboundLink(url: string) {
  * @param filename 文件名
  */
 export function trackDownload(filename: string) {
-  trackEvent('File Download', { filename });
+  trackEvent('file_download', { filename });
 }
 
 /**
@@ -66,7 +57,7 @@ export function trackDownload(filename: string) {
  * @param formName 表单名称
  */
 export function trackFormSubmit(formName: string) {
-  trackEvent('Form Submit', { form: formName });
+  trackEvent('form_submit', { form: formName });
 }
 
 /**
@@ -74,7 +65,7 @@ export function trackFormSubmit(formName: string) {
  * @param query 搜索关键词
  */
 export function trackSearch(query: string) {
-  trackEvent('Search', { query });
+  trackEvent('search', { query });
 }
 
 /**
@@ -88,7 +79,7 @@ export function trackError(error: string, context?: string) {
   if (typeof context === 'string' && context.length > 0) {
     props.context = context;
   }
-  trackEvent('Error', props);
+  trackEvent('error', props);
 }
 
 /**
@@ -96,7 +87,7 @@ export function trackError(error: string, context?: string) {
  * @param method 注册方式（如 email, google, github 等）
  */
 export function trackSignup(method: string) {
-  trackEvent('Signup', { method });
+  trackEvent('signup', { method });
 }
 
 /**
@@ -104,7 +95,7 @@ export function trackSignup(method: string) {
  * @param method 登录方式
  */
 export function trackLogin(method: string) {
-  trackEvent('Login', { method });
+  trackEvent('login', { method });
 }
 
 /**
