@@ -39,7 +39,6 @@ import {
   IconBell,
   IconChevronRight,
   IconChevronsDown,
-  IconCreditCard,
   IconLogout,
   IconPhotoUp,
   IconUserCircle
@@ -48,6 +47,8 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
+import { useEffect, useState } from 'react';
+import { UserSession } from '@/lib/auth/verify';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
 export const company = {
@@ -118,14 +119,7 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const { state } = useSidebar();
-  // const { user } = useUser();
-  // Mock user data for development without auth
-  const user = {
-    id: 'dev-user',
-    fullName: 'Dev User',
-    emailAddresses: [{ emailAddress: 'dev@example.com' }],
-    imageUrl: undefined
-  };
+  const [user, setUser] = useState<UserSession | null>(null);
   const router = useRouter();
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
@@ -136,6 +130,32 @@ export default function AppSidebar() {
   React.useEffect(() => {
     // Side effects based on sidebar state changes
   }, [isOpen]);
+
+  // Load current session user and keep dev fallback
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.user) {
+          setUser(data.user as UserSession);
+        } else if (process.env.NODE_ENV === 'development') {
+          setUser({
+            username: 'dev-user',
+            displayName: 'Dev User',
+            email: 'dev@example.com'
+          });
+        }
+      })
+      .catch(() => {
+        if (process.env.NODE_ENV === 'development') {
+          setUser({
+            username: 'dev-user',
+            displayName: 'Dev User',
+            email: 'dev@example.com'
+          });
+        }
+      });
+  }, []);
 
   return (
     <Sidebar collapsible='icon'>
@@ -275,19 +295,21 @@ export default function AppSidebar() {
                     <IconUserCircle className='mr-2 h-4 w-4' />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <IconCreditCard className='mr-2 h-4 w-4' />
-                    Billing
-                  </DropdownMenuItem>
+
                   <DropdownMenuItem>
                     <IconBell className='mr-2 h-4 w-4' />
                     Notifications
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    router.push('/sign-in');
+                  }}
+                >
                   <IconLogout className='mr-2 h-4 w-4' />
-                  <span onClick={() => router.push('/')}>Sign Out (Mock)</span>
+                  <span>退出登录</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
