@@ -38,4 +38,4 @@
 
 ## 安全与配置提示
 - 本地环境：将 `env.example.txt` 复制为 `.env.local`；敏感信息勿入库。
-- Clerk / Sentry / Plausible 等需正确环境变量；Docker/NGINX/SSL 请参考 `docs/` 与 `scripts/`。
+- Clerk / Sentry / PostHog 等需正确环境变量；Docker/NGINX/SSL 请参考 `docs/` 与 `scripts/`。

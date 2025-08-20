@@ -218,35 +218,16 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 ./scripts/deploy-env.sh prod -d && ./scripts/deploy-env.sh prod -u
 ```
 
-## 📊 自托管分析服务
+## 📊 用户行为分析（PostHog）
 
-项目集成了 Plausible Analytics，提供隐私友好的网站分析功能：
+已内置 PostHog 前端 SDK 与用户识别：
 
-### 启动分析服务
+- 设置环境变量：
+  - `NEXT_PUBLIC_POSTHOG_KEY`（必填）
+  - `NEXT_PUBLIC_POSTHOG_HOST`（可选，默认为 `https://us.i.posthog.com`；自建请填你的域名）
+- 登录后会自动调用 `identify` 绑定邮箱/用户名；常用事件可通过 `src/lib/analytics.ts` 直接调用。
 
-```bash
-# 启动分析服务
-./scripts/deploy-analytics.sh --up
-
-# 初始化管理员账户
-./scripts/deploy-analytics.sh --init
-```
-
-### 访问分析面板
-
-- **直接访问**: http://localhost:8000
-- **通过代理**: https://your-domain/analytics
-- **默认账户**: admin@example.com / changeme123
-
-### 分析功能
-
-- 实时访问统计（无需 Cookie）
-- 页面浏览量和访客统计
-- 设备和浏览器分析
-- 地理位置分布（城市级别）
-- 自定义事件追踪
-
-详细使用指南请参考 [分析服务文档](docs/ANALYTICS_GUIDE.md)
+更多说明见 [行为分析指南](docs/ANALYTICS_GUIDE.md)。
 
 ## 🔧 故障排查
 
@@ -289,7 +270,7 @@ rm -rf certs/
 ## 🌟 特性
 
 - ✅ **多环境部署**: 开发和生产环境完全隔离
-- ✅ **自托管分析**: 集成 Plausible Analytics，数据完全本地化
+- ✅ **行为分析**: 集成 PostHog（云端或自建）
 - ✅ **iframe 嵌入**: 支持绕过 X-Frame-Options 限制
 - ✅ **Docker 容器化**: 一键构建部署
 - ✅ **SSL/HTTPS**: 自动生成自签名证书
@@ -305,7 +286,7 @@ rm -rf certs/
 |------|------|
 | [CLAUDE.md](CLAUDE.md) | Claude AI 使用指南和项目结构说明 |
 | [Docker 部署指南](docs/DOCKER_DEPLOYMENT.md) | 完整的 Docker 部署文档 |
-| [分析服务指南](docs/ANALYTICS_GUIDE.md) | 自托管 Plausible Analytics 使用说明 |
+| [行为分析指南](docs/ANALYTICS_GUIDE.md) | PostHog 集成与使用说明 |
 | [内部导航指南](docs/NAVIGATION_GUIDE.md) | 内部导航系统配置和使用 |
 | [AD 认证设置](docs/AD_AUTH_SETUP.md) | Active Directory 认证集成 |
 | [环境变量示例](env.example.txt) | 环境变量配置模板 |

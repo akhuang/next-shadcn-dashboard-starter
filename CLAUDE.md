@@ -105,7 +105,7 @@ pnpm run format:check
 - 复制 `env.example.txt` 为 `.env.local`（本地开发）
 - 复制 `scripts/docker/.env.prod.example` 为 `.env.prod`（Docker 生产部署）
 - Clerk 认证支持无密钥模式，可以立即开始开发
-- Plausible Analytics 自托管分析服务（数据本地化）
+- PostHog 行为分析（云端或自建）
 - Sentry 错误追踪需要配置相应的环境变量
 
 ## 开发注意事项

@@ -16,11 +16,10 @@
   - Nginx 反向代理
   - 容器管理和维护
 
-- [**自托管分析服务**](ANALYTICS_GUIDE.md) - Plausible Analytics 集成指南
-  - 隐私友好的网站分析
-  - 自定义事件追踪
-  - 数据完全本地化
-  - 性能监控配置
+- [**行为分析**](ANALYTICS_GUIDE.md) - PostHog 集成指南
+  - 页面/事件采集
+  - 登录用户识别
+  - 自建或云端部署
 
 ## 🔧 功能模块
 
@@ -46,7 +45,7 @@
 - **状态管理**: Zustand
 - **表单**: React Hook Form + Zod
 - **表格**: Tanstack Table
-- **分析**: Plausible Analytics（自托管）
+- **分析**: PostHog（云端或自建）
 - **错误追踪**: Sentry
 
 ### 项目结构
@@ -75,7 +74,7 @@ pnpm run lint     # 代码检查
 ./scripts/deploy-env.sh prod -b -u  # 生产环境
 
 # 分析服务
-./scripts/deploy-analytics.sh --up  # 启动分析服务
+# 使用 PostHog（无需本地启动服务），配置 NEXT_PUBLIC_POSTHOG_KEY 即可
 ```
 
 ## 🔍 特殊配置
@@ -99,7 +98,7 @@ pnpm run lint     # 代码检查
 ## 📊 监控与分析
 
 - **健康检查**: `/api/health` 端点
-- **访问分析**: Plausible Analytics 自托管
+- **访问分析**: PostHog（云端或自建）
 - **错误追踪**: Sentry 集成（可选）
 - **性能监控**: 实时指标面板
 
