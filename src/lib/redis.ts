@@ -85,5 +85,6 @@ export const REDIS_KEYS = {
 export const CACHE_TTL = {
   DEFAULT: 3600, // 1 hour
   SHEET_DATA: 1800, // 30 minutes
-  SEARCH: 300 // 5 minutes
+  SEARCH: 300, // 5 minutes
+  USER_DATA: 86400 * 7 // 7 days
 };
