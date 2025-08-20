@@ -17,12 +17,7 @@ export function PlausibleAnalytics({
   const siteDomain =
     domain ||
     process.env.NEXT_PUBLIC_SITE_DOMAIN ||
-    (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
-  const isEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED !== 'false';
-
-  if (!isEnabled) {
-    return null;
-  }
+    (typeof window !== 'undefined' ? window.location.host : 'localhost:3000');
 
   // 使用自托管的 Plausible 脚本路径
   const scriptSrc = selfHosted

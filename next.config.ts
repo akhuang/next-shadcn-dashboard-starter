@@ -13,7 +13,20 @@ const baseConfig: NextConfig = {
       }
     ]
   },
-  transpilePackages: ['geist']
+  transpilePackages: ['geist'],
+  // 代理 Plausible Analytics 请求到本地服务
+  async rewrites() {
+    return [
+      {
+        source: '/js/script.js',
+        destination: 'http://localhost:8000/js/script.js'
+      },
+      {
+        source: '/api/event',
+        destination: 'http://localhost:8000/api/event'
+      }
+    ];
+  }
 };
 
 let configWithPlugins = baseConfig;

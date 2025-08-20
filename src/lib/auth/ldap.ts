@@ -47,71 +47,118 @@ export class ActiveDirectoryAuth {
         reject(new Error(`LDAP connection error: ${err.message}`));
       });
 
-      // Try to bind with user credentials
-      const userDN = this.formatUserDN(username);
+      // Determine bind DN and password
+      // If bindDN is provided in config, use it for initial bind (service account)
+      // Otherwise, bind directly with user credentials
+      const isServiceAccountBind =
+        this.config.bindDN && this.config.bindPassword;
+      const bindDN = isServiceAccountBind
+        ? this.config.bindDN
+        : this.formatUserDN(username);
+      const bindPassword = isServiceAccountBind
+        ? this.config.bindPassword
+        : password;
 
-      client.bind(userDN, password, (bindErr) => {
+      // Try to bind
+      client.bind(bindDN!, bindPassword!, (bindErr) => {
         if (bindErr) {
           client.unbind();
           resolve(null); // Invalid credentials
           return;
         }
 
-        // If bind successful, search for user details
-        const searchFilter = this.config.searchFilter!.replace(
-          '{{username}}',
-          username
-        );
-        const searchOptions = {
-          scope: 'sub' as const,
-          filter: searchFilter,
-          attributes: [
-            'sAMAccountName',
-            'displayName',
-            'mail',
-            'department',
-            'title',
-            'memberOf'
-          ]
-        };
-
-        client.search(this.config.baseDN, searchOptions, (searchErr, res) => {
-          if (searchErr) {
-            client.unbind();
-            reject(new Error(`LDAP search error: ${searchErr.message}`));
-            return;
-          }
-
-          let user: ADUser | null = null;
-
-          res.on('searchEntry', (entry) => {
-            const attributes = entry.attributes;
-            user = {
-              username:
-                this.getAttribute(attributes, 'sAMAccountName') || username,
-              displayName:
-                this.getAttribute(attributes, 'displayName') || username,
-              email:
-                this.getAttribute(attributes, 'mail') ||
-                `${username}@company.local`,
-              department: this.getAttribute(attributes, 'department'),
-              title: this.getAttribute(attributes, 'title'),
-              groups: this.getGroups(attributes)
-            };
+        // If using service account, need to verify user password separately
+        if (isServiceAccountBind) {
+          const userDN = this.formatUserDN(username);
+          client.bind(userDN, password, (userBindErr) => {
+            if (userBindErr) {
+              client.unbind();
+              resolve(null); // Invalid user credentials
+              return;
+            }
+            // Continue to search for user details
+            this.searchUserDetails(client, username, resolve, reject);
           });
-
-          res.on('error', (err) => {
-            client.unbind();
-            reject(new Error(`LDAP search error: ${err.message}`));
-          });
-
-          res.on('end', () => {
-            client.unbind();
-            resolve(user);
-          });
-        });
+        } else {
+          // Already bound with user credentials, search for details
+          this.searchUserDetails(client, username, resolve, reject);
+        }
       });
     });
+  }
+
+  /**
+   * Search for user details in LDAP
+   */
+  private searchUserDetails(
+    client: any,
+    username: string,
+    resolve: (value: ADUser | null) => void,
+    reject: (reason?: any) => void
+  ): void {
+    const searchFilter = this.config.searchFilter!.replace(
+      '{{username}}',
+      username
+    );
+    const searchOptions = {
+      scope: 'sub' as const,
+      filter: searchFilter,
+      attributes: [
+        'sAMAccountName',
+        'displayName',
+        'mail',
+        'department',
+        'title',
+        'memberOf',
+        'cn',
+        'uid'
+      ]
+    };
+
+    client.search(
+      this.config.baseDN,
+      searchOptions,
+      (searchErr: any, res: any) => {
+        if (searchErr) {
+          client.unbind();
+          reject(new Error(`LDAP search error: ${searchErr.message}`));
+          return;
+        }
+
+        let user: ADUser | null = null;
+
+        res.on('searchEntry', (entry: any) => {
+          const attributes = entry.attributes;
+          user = {
+            username:
+              this.getAttribute(attributes, 'sAMAccountName') ||
+              this.getAttribute(attributes, 'uid') ||
+              this.getAttribute(attributes, 'cn') ||
+              username,
+            displayName:
+              this.getAttribute(attributes, 'displayName') ||
+              this.getAttribute(attributes, 'cn') ||
+              username,
+            email:
+              this.getAttribute(attributes, 'mail') ||
+              `${username}@${this.extractDomain(this.config.baseDN)}`,
+            department: this.getAttribute(attributes, 'department'),
+            title: this.getAttribute(attributes, 'title'),
+            groups: this.getGroups(attributes)
+          };
+        });
+
+        res.on('error', (err: any) => {
+          client.unbind();
+          reject(new Error(`LDAP search error: ${err.message}`));
+        });
+
+        res.on('end', () => {
+          client.unbind();
+          resolve(user);
+        });
+      }
+    );
   }
 
   /**
@@ -128,8 +175,17 @@ export class ActiveDirectoryAuth {
       return username;
     }
 
+    // For Huawei domain, support direct username binding
+    // This allows authentication without specifying a full DN
+    if (!this.config.bindDN || this.config.bindDN === '') {
+      // If no bindDN specified, try common formats
+      // First try UPN format
+      const domain = this.extractDomain(this.config.baseDN);
+      return `${username}@${domain}`;
+    }
+
     // If we have a bindDN pattern, use it
-    if (this.config.bindDN) {
+    if (this.config.bindDN.includes('{{username}}')) {
       return this.config.bindDN.replace('{{username}}', username);
     }
 
@@ -176,10 +232,22 @@ export function createADAuth(): ActiveDirectoryAuth {
   const config: ADConfig = {
     url: process.env.LDAP_URL || 'ldap://dc.company.local:389',
     baseDN: process.env.LDAP_BASE_DN || 'DC=company,DC=local',
-    bindDN: process.env.LDAP_BIND_DN, // Optional: 'DOMAIN\\{{username}}' or '{{username}}@domain.com'
+    bindDN: process.env.LDAP_BIND_DN || undefined, // Support empty/blank for user self-bind
+    bindPassword: process.env.LDAP_BIND_PASSWORD || undefined,
     searchFilter:
-      process.env.LDAP_SEARCH_FILTER || '(sAMAccountName={{username}})'
+      process.env.LDAP_SEARCH_FILTER ||
+      '(|(sAMAccountName={{username}})(uid={{username}})(cn={{username}}))'
   };
+
+  // Log debug info if enabled
+  if (process.env.LDAP_DEBUG === 'true') {
+    console.log('LDAP Configuration:', {
+      url: config.url,
+      baseDN: config.baseDN,
+      bindDN: config.bindDN ? 'configured' : 'user self-bind',
+      searchFilter: config.searchFilter
+    });
+  }
 
   // Add TLS options if using LDAPS
   if (config.url.startsWith('ldaps://')) {
