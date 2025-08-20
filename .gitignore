@@ -57,3 +57,4 @@ next-env.d.ts
 # scripts/docker/.env.prod  # 示例配置文件，包含默认值，可以提交
 
 excel-data
+/generated/prisma

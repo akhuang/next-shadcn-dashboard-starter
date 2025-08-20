@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node -r dotenv/config index.js dotenv_config_path=.env.development",
-    "dev:watch": "nodemon -r dotenv/config index.js dotenv_config_path=.env.development"
+    "dev": "node index-enhanced.js",
+    "dev:basic": "node index.js",
+    "dev:watch": "nodemon index-enhanced.js"
   },
   "dependencies": {
     "xlsx": "^0.18.5",

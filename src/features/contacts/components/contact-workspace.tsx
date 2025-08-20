@@ -8,7 +8,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   RefreshCw,
-  Settings,
   Download,
   Users,
   Building2,
@@ -19,14 +18,6 @@ import {
   X,
   Copy
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { MergeRange, ExcelData } from '@/types/excel';
@@ -140,13 +131,12 @@ export default function ContactWorkspace() {
   });
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
-  const [folderPath, setFolderPath] = useState('/tmp/test-contacts');
+  // 文件夹路径由后端监控服务的环境变量控制，不再需要前端设置
   // 实时指示不依赖 SSE，去除连接状态
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   // const [showSearchOverlay, setShowSearchOverlay] = useState(false); // 不再需要遮罩层
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 新的状态：存储从API获取的文件信息
   const [apiFiles, setApiFiles] = useState<any[]>([]);
@@ -385,27 +375,6 @@ export default function ContactWorkspace() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const initializeFolder = async () => {
-    setLoading(true);
-    try {
-      // 使用异步缓存 API
-      const response = await fetch(
-        `/api/excel/v3?action=setFolder&folderPath=${encodeURIComponent(folderPath)}`
-      );
-      const result = await response.json();
-      if (result.success) {
-        // 立即加载文件列表
-        await loadFilesList();
-        setSettingsOpen(false);
-        // lastSyncTime 将由 loadFilesList 根据服务器返回的时间设置
-      }
-    } catch (error) {
-      // ignore initialize error
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // 加载指定工作表的信息（按需加载）
   const loadSheetInfo = useCallback(
     async (fileName: string, sheetName: string) => {
@@ -441,11 +410,10 @@ export default function ContactWorkspace() {
     [sheetInfoMap]
   );
 
-  // 不使用 SSE，仅在初始化或手动刷新时更新数据
+  // 初始化时加载文件列表
   useEffect(() => {
-    if (!folderPath) return;
-    initializeFolder();
-  }, [folderPath]);
+    loadFilesList();
+  }, []);
 
   const exportToCSV = () => {
     if (displayContacts.length === 0) return;
@@ -608,47 +576,15 @@ export default function ContactWorkspace() {
               <Button
                 variant='ghost'
                 size='sm'
-                onClick={initializeFolder}
+                onClick={loadFilesList}
                 disabled={loading}
                 className='cursor-pointer disabled:cursor-not-allowed'
+                title='刷新文件列表'
               >
                 <RefreshCw
                   className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
                 />
               </Button>
-              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogTrigger asChild>
-                  <Button variant='ghost' size='sm' className='cursor-pointer'>
-                    <Settings className='h-4 w-4' />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className='w-[92vw] max-w-[520px] sm:max-w-[520px]'>
-                  <DialogHeader>
-                    <DialogTitle>设置监控文件夹</DialogTitle>
-                  </DialogHeader>
-                  <div className='space-y-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='folderPath' className='block'>
-                        文件夹路径
-                      </Label>
-                      <Input
-                        id='folderPath'
-                        value={folderPath}
-                        onChange={(e) => setFolderPath(e.target.value)}
-                        placeholder='/path/to/excel/folder'
-                        className='w-full'
-                      />
-                    </div>
-                    <Button
-                      onClick={initializeFolder}
-                      className='w-full'
-                      disabled={loading || !folderPath}
-                    >
-                      确认设置
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </div>
           </div>
         </div>

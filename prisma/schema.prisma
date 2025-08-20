@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  username     String         @unique
+  displayName  String?
+  adUsername   String?        @unique // AD 域用户名
+  department   String?        // 部门
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  // 关联
+  favorites    NavigationFavorite[]
+  visits       NavigationVisit[]
+  
+  @@map("users")
+}
+
+// 导航项表（从 Excel 同步）
+model NavigationItem {
+  id           String         @id
+  category     String
+  name         String
+  url          String
+  description  String?
+  isExternal   Boolean        @default(true)
+  sortOrder    Int            @default(0)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  // 关联
+  favorites    NavigationFavorite[]
+  visits       NavigationVisit[]
+  
+  @@index([category])
+  @@index([isActive])
+  @@map("navigation_items")
+}
+
+// 用户收藏表
+model NavigationFavorite {
+  id           String         @id @default(uuid())
+  userId       String
+  itemId       String
+  createdAt    DateTime       @default(now())
+  
+  // 关联
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item         NavigationItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, itemId])
+  @@index([userId])
+  @@index([itemId])
+  @@map("navigation_favorites")
+}
+
+// 用户访问记录表
+model NavigationVisit {
+  id           String         @id @default(uuid())
+  userId       String
+  itemId       String
+  visitedAt    DateTime       @default(now())
+  count        Int            @default(1)
+  lastVisitAt  DateTime       @default(now())
+  
+  // 关联
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item         NavigationItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, itemId])
+  @@index([userId, lastVisitAt])
+  @@index([itemId])
+  @@map("navigation_visits")
+}
+
+// 导航分类表（可选，用于管理分类）
+model NavigationCategory {
+  id           String         @id @default(uuid())
+  name         String         @unique
+  description  String?
+  icon         String?
+  sortOrder    Int            @default(0)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  @@index([isActive])
+  @@map("navigation_categories")
+}

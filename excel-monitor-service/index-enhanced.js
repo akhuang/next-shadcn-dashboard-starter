@@ -145,6 +145,11 @@ async function scanDirectory(type, config) {
 
     console.log(`[${type}] Found ${excelFiles.length} Excel files`);
 
+    // Initialize FILES list for contacts
+    if (config.processor === 'default') {
+      await updateFilesList('reset', excelFiles);
+    }
+
     // Process each file
     for (const file of excelFiles) {
       await addToQueue(type, file, config);
@@ -448,6 +453,9 @@ async function processContactFile(fileInfo, config) {
     // 移除 TTL
   );
 
+  // 更新文件列表
+  await updateFilesList('add', fileName);
+
   console.log(`[contacts] Completed processing: ${fileName}`);
 }
 
@@ -474,6 +482,40 @@ function processMergedCells(data, merges) {
   });
 
   return result;
+}
+
+// Update files list in Redis
+async function updateFilesList(action, fileName) {
+  try {
+    // Get current files list
+    const filesJson = await redis.get(CONTACT_REDIS_KEYS.FILES);
+    let files = filesJson ? JSON.parse(filesJson) : [];
+
+    if (action === 'add') {
+      // Add file if not exists
+      if (!files.includes(fileName)) {
+        files.push(fileName);
+        console.log(`[contacts] Added ${fileName} to files list`);
+      }
+    } else if (action === 'remove') {
+      // Remove file from list
+      files = files.filter((f) => f !== fileName);
+      console.log(`[contacts] Removed ${fileName} from files list`);
+    } else if (action === 'reset') {
+      // Reset with provided list (fileName is actually an array in this case)
+      files = fileName;
+      console.log(`[contacts] Reset files list with ${files.length} files`);
+    }
+
+    // Update Redis
+    await redis.set(
+      CONTACT_REDIS_KEYS.FILES,
+      JSON.stringify(files)
+      // 不设置 TTL，永久有效
+    );
+  } catch (error) {
+    console.error('Error updating files list:', error.message);
+  }
 }
 
 // Remove file from cache (for contacts)
@@ -508,6 +550,9 @@ async function removeFileFromCache(type, fileName, config) {
       await redis.del(CONTACT_REDIS_KEYS.FILE_SHEETS(fileName));
       await redis.del(CONTACT_REDIS_KEYS.FILE_STATUS(fileName));
     }
+
+    // 更新文件列表
+    await updateFilesList('remove', fileName);
 
     console.log(`[${type}] Removed from cache: ${fileName}`);
   } catch (error) {

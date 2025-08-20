@@ -21,8 +21,8 @@ ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 WORKDIR /app
 
 # 复制包管理文件
-COPY ../package.json ../pnpm-lock.yaml ./
-COPY ../.npmrc ./
+COPY package.json pnpm-lock.yaml ./
+COPY .npmrc* ./
 
 # 配置 npm 代理和 SSL（如果有代理的话）
 RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy $HTTP_PROXY; fi && \
