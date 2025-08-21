@@ -26,8 +26,6 @@ services:
       - TZ=Asia/Shanghai
       # 数据库连接
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-navigation_db}?schema=public
-      # Microsoft Clarity Analytics (Optional)
-      - NEXT_PUBLIC_CLARITY_PROJECT_ID=${NEXT_PUBLIC_CLARITY_PROJECT_ID}
       # Redis 连接配置
       - REDIS_HOST=redis
       - REDIS_PORT=6379
