@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createADAuth } from '@/lib/auth/ldap';
 import { createMockAuth } from '@/lib/auth/mock-auth';
 import { createToken } from '@/lib/auth/verify';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     return NextResponse.json(
       { error: '登录失败，请检查域控制器连接' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 // POST - 模拟登录
 export async function POST(req: NextRequest) {
@@ -52,13 +53,13 @@ export async function POST(req: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error during mock login:', error);
+    logger.error('Error during mock login:', error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });
   }
 }
 
 // GET - 获取当前登录用户
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const cookieStore = await cookies();
     const userId = cookieStore.get('mock-user-id')?.value;
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching current user:', error);
+    logger.error('Error fetching current user:', error);
     return NextResponse.json(
       { error: 'Failed to fetch user' },
       { status: 500 }
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
 }
 
 // DELETE - 登出
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
     const cookieStore = await cookies();
     cookieStore.delete('mock-user-id');
@@ -103,7 +104,7 @@ export async function DELETE(req: NextRequest) {
       message: 'Logged out successfully'
     });
   } catch (error) {
-    console.error('Error during logout:', error);
+    logger.error('Error during logout:', error);
     return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
   }
 }
