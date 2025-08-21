@@ -34,6 +34,10 @@ yarn-error.log*
 !.env
 !scripts/docker/.env
 
+# Ignore sensitive domain configuration
+scripts/docker/.env.huawei
+.env.huawei
+
 # vercel
 .vercel
 

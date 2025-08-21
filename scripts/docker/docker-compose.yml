@@ -37,6 +37,16 @@ services:
       - EXCEL_WATCH_DIR=/tmp/test-contacts
       - EXCEL_WATCH_POLLING=false
       - EXCEL_WATCH_INTERVAL=1000
+      # 域登录认证配置 (LDAP/AD)
+      - AUTH_MODE=${AUTH_MODE:-development}
+      - LDAP_URL=${LDAP_URL}
+      - LDAP_BASE_DN=${LDAP_BASE_DN}
+      - LDAP_BIND_DN=${LDAP_BIND_DN}
+      - LDAP_BIND_PASSWORD=${LDAP_BIND_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - LDAP_TLS_REJECT_UNAUTHORIZED=${LDAP_TLS_REJECT_UNAUTHORIZED:-false}
+      - LDAP_USER_FILTER=${LDAP_USER_FILTER}
+      - LDAP_DEBUG=${LDAP_DEBUG:-false}
     networks:
       - dashboard-network
     volumes:
