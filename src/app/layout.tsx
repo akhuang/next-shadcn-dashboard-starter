@@ -7,9 +7,6 @@ import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import { UmamiAnalytics } from '@/components/analytics/umami-provider';
-import { UserSessionTracker } from '@/components/analytics/user-session-tracker';
-import { UmamiPageTracker } from '@/components/analytics/umami-page-tracker';
 import './globals.css';
 import './theme.css';
 
@@ -68,9 +65,6 @@ export default async function RootLayout({
         )}
       >
         <NextTopLoader showSpinner={false} />
-        <UmamiAnalytics />
-        <UserSessionTracker />
-        <UmamiPageTracker />
         <NuqsAdapter>
           <ThemeProvider
             attribute='class'
