@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { excelAsyncCacheService } from '@/lib/excel-async-cache-service';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -82,7 +83,10 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
-        const info = await excelAsyncCacheService.getSheetInfo(fileName, sheetName);
+        const info = await excelAsyncCacheService.getSheetInfo(
+          fileName,
+          sheetName
+        );
         return NextResponse.json({
           success: true,
           data: info
@@ -94,14 +98,14 @@ export async function GET(request: NextRequest) {
         const sheetName = searchParams.get('sheetName');
         const page = parseInt(searchParams.get('page') || '1');
         const pageSize = parseInt(searchParams.get('pageSize') || '100');
-        
+
         if (!fileName || !sheetName) {
           return NextResponse.json(
             { error: 'File name and sheet name are required' },
             { status: 400 }
           );
         }
-        
+
         const result = await excelAsyncCacheService.getSheetData(
           fileName,
           sheetName,
@@ -118,7 +122,7 @@ export async function GET(request: NextRequest) {
         const query = searchParams.get('query') || '';
         const page = parseInt(searchParams.get('page') || '1');
         const pageSize = parseInt(searchParams.get('pageSize') || '50');
-        
+
         const result = await excelAsyncCacheService.searchContacts(
           query,
           page,
@@ -131,13 +135,10 @@ export async function GET(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error('API error:', error);
+    logger.error('API error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

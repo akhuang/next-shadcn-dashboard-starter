@@ -1,4 +1,5 @@
 import ldap from 'ldapjs';
+import { logger } from '@/lib/logger';
 
 interface ADConfig {
   url: string;
@@ -241,7 +242,7 @@ export function createADAuth(): ActiveDirectoryAuth {
 
   // Log debug info if enabled
   if (process.env.LDAP_DEBUG === 'true') {
-    console.log('LDAP Configuration:', {
+    logger.log('LDAP Configuration:', {
       url: config.url,
       baseDN: config.baseDN,
       bindDN: config.bindDN ? 'configured' : 'user self-bind',

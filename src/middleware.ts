@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
 
 // Define protected routes that require authentication
 const protectedRoutes = ['/dashboard', '/profile', '/settings', '/admin'];
 
 export async function middleware(request: NextRequest) {
-  console.log('🔒 Authentication enabled, checking...');
+  logger.log('🔒 Authentication enabled, checking...');
 
   const pathname = request.nextUrl.pathname;
 

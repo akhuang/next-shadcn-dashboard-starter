@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 // 获取当前用户
 async function getCurrentUser() {
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
       visit
     });
   } catch (error) {
-    console.error('Error recording visit:', error);
+    logger.error('Error recording visit:', error);
     return NextResponse.json(
       { error: 'Failed to record visit' },
       { status: 500 }
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
 }
 
 // DELETE - 清空访问记录
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -87,7 +88,7 @@ export async function DELETE(req: NextRequest) {
       message: 'Visit history cleared'
     });
   } catch (error) {
-    console.error('Error clearing visits:', error);
+    logger.error('Error clearing visits:', error);
     return NextResponse.json(
       { error: 'Failed to clear visits' },
       { status: 500 }

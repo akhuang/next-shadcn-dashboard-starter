@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import redis from '@/lib/redis';
 
 // POST - 从 Redis 同步导航数据到 PostgreSQL
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     // 从 Redis 获取导航数据
     const navigationDataJson = await redis.get('navigation:data');
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 }
 
 // GET - 获取同步状态
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // 检查 Redis 中的数据
     const redisData = await redis.get('navigation:data');

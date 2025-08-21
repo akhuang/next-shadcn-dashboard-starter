@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET - 获取所有导航项
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const items = await prisma.navigationItem.findMany({
       where: { isActive: true },

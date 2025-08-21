@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { NextRequest } from 'next/server';
 import { vi } from 'vitest';
 

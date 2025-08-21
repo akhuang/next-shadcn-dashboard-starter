@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 // 获取当前用户
 async function getCurrentUser() {
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
       favorite
     });
   } catch (error) {
-    console.error('Error adding favorite:', error);
+    logger.error('Error adding favorite:', error);
     return NextResponse.json(
       { error: 'Failed to add favorite' },
       { status: 500 }
@@ -107,7 +108,7 @@ export async function DELETE(req: NextRequest) {
       message: 'Removed from favorites'
     });
   } catch (error) {
-    console.error('Error removing favorite:', error);
+    logger.error('Error removing favorite:', error);
     return NextResponse.json(
       { error: 'Failed to remove favorite' },
       { status: 500 }

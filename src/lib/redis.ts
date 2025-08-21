@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { logger } from '@/lib/logger';
 
 // Skip Redis during build time
 const isBuilding = process.env.SKIP_BUILD_REDIS === 'true';
@@ -7,7 +8,7 @@ const isBuilding = process.env.SKIP_BUILD_REDIS === 'true';
 let redis: Redis;
 
 if (isBuilding) {
-  console.log('Skipping Redis connection during build');
+  logger.log('Skipping Redis connection during build');
   // Create a mock Redis that returns promises for all methods
   redis = new Proxy({} as Redis, {
     get(target, prop) {
@@ -24,7 +25,7 @@ if (isBuilding) {
   const redisPassword = process.env.REDIS_PASSWORD;
   const redisDb = parseInt(process.env.REDIS_DB || '0');
 
-  console.log(
+  logger.log(
     `Initializing Redis connection to ${redisHost}:${redisPort} (DB: ${redisDb})`
   );
 
@@ -35,7 +36,7 @@ if (isBuilding) {
     db: redisDb,
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
-      console.log(`Redis retry attempt ${times}, waiting ${delay}ms`);
+      logger.log(`Redis retry attempt ${times}, waiting ${delay}ms`);
       return delay;
     },
     maxRetriesPerRequest: 3,
@@ -45,19 +46,19 @@ if (isBuilding) {
   });
 
   redis.on('connect', () => {
-    console.log(`Redis connected successfully to ${redisHost}:${redisPort}`);
+    logger.log(`Redis connected successfully to ${redisHost}:${redisPort}`);
   });
 
   redis.on('error', (err) => {
-    console.error(`Redis connection error (${redisHost}:${redisPort}):`, err);
+    logger.error(`Redis connection error (${redisHost}:${redisPort}):`, err);
   });
 
   redis.on('ready', () => {
-    console.log(`Redis ready to accept commands at ${redisHost}:${redisPort}`);
+    logger.log(`Redis ready to accept commands at ${redisHost}:${redisPort}`);
   });
 
   redis.on('reconnecting', (delay: number) => {
-    console.log(`Redis reconnecting in ${delay}ms`);
+    logger.log(`Redis reconnecting in ${delay}ms`);
   });
 }
 

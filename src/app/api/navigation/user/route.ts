@@ -37,7 +37,7 @@ async function getCurrentUser() {
 }
 
 // GET - 获取用户数据（收藏和访问记录）
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {

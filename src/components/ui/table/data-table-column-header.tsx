@@ -2,6 +2,7 @@
 
 import type { Column } from '@tanstack/react-table';
 import { EyeOff } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 import {
   DropdownMenu,
@@ -56,7 +57,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 <CaretSortIcon />
               );
             } catch (error) {
-              console.warn('排序状态检查失败:', error);
+              logger.warn('排序状态检查失败:', error);
               return <CaretSortIcon />;
             }
           })()}

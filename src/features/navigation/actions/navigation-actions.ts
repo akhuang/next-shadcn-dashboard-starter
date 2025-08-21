@@ -6,13 +6,14 @@ import type {
   NavigationCategory,
   UserNavigationData
 } from '@/types/navigation';
+import { logger } from '@/lib/logger';
 
 export async function getNavigationData(): Promise<NavigationCategory[]> {
   try {
     const data = await navigationService.getNavigationData();
     return data;
   } catch (error) {
-    console.error('Error fetching navigation data:', error);
+    logger.error('Error fetching navigation data:', error);
     return [];
   }
 }
@@ -25,7 +26,7 @@ export async function getUserNavigationData(): Promise<UserNavigationData | null
     const userData = await navigationService.getUserData(userId);
     return userData;
   } catch (error) {
-    console.error('Error fetching user navigation data:', error);
+    logger.error('Error fetching user navigation data:', error);
     return null;
   }
 }
@@ -40,7 +41,7 @@ export async function addRecentVisit(
     const userData = await navigationService.addRecentVisit(userId, itemId);
     return userData;
   } catch (error) {
-    console.error('Error adding recent visit:', error);
+    logger.error('Error adding recent visit:', error);
     return null;
   }
 }
@@ -55,7 +56,7 @@ export async function toggleFavorite(
     const userData = await navigationService.toggleFavorite(userId, itemId);
     return userData;
   } catch (error) {
-    console.error('Error toggling favorite:', error);
+    logger.error('Error toggling favorite:', error);
     return null;
   }
 }
@@ -68,7 +69,7 @@ export async function clearRecentVisits(): Promise<UserNavigationData | null> {
     const userData = await navigationService.clearRecentVisits(userId);
     return userData;
   } catch (error) {
-    console.error('Error clearing recent visits:', error);
+    logger.error('Error clearing recent visits:', error);
     return null;
   }
 }
@@ -85,7 +86,7 @@ export async function getNavigationStatus(): Promise<{
 
     return { lastUpdate, fileStatus };
   } catch (error) {
-    console.error('Error fetching navigation status:', error);
+    logger.error('Error fetching navigation status:', error);
     return { lastUpdate: null, fileStatus: null };
   }
 }

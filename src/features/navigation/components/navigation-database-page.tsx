@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { logger } from '@/lib/logger';
 import {
   ExternalLink,
   Star,
@@ -80,7 +81,7 @@ export default function NavigationDatabasePage() {
         setUserData(userData);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ export default function NavigationDatabasePage() {
         await loadData();
       }
     } catch (error) {
-      console.error('Error during login:', error);
+      logger.error('Error during login:', error);
     }
   };
 
@@ -110,7 +111,7 @@ export default function NavigationDatabasePage() {
       setUserData(null);
       await loadData();
     } catch (error) {
-      console.error('Error during logout:', error);
+      logger.error('Error during logout:', error);
     }
   };
 
@@ -142,7 +143,7 @@ export default function NavigationDatabasePage() {
         }
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      logger.error('Error toggling favorite:', error);
     }
   };
 
@@ -158,7 +159,7 @@ export default function NavigationDatabasePage() {
       });
       // 不等待响应，让用户快速跳转
     } catch (error) {
-      console.error('Error recording visit:', error);
+      logger.error('Error recording visit:', error);
     }
   };
 
@@ -174,18 +175,18 @@ export default function NavigationDatabasePage() {
         await loadData();
       }
     } catch (error) {
-      console.error('Error clearing visits:', error);
+      logger.error('Error clearing visits:', error);
     }
   };
 
   // 获取所有导航项
-  const allItems = useMemo(() => {
-    const items: NavigationItem[] = [];
-    navigationData.forEach((category) => {
-      items.push(...category.items);
-    });
-    return items;
-  }, [navigationData]);
+  // const allItems = useMemo(() => {
+  //   const items: NavigationItem[] = [];
+  //   navigationData.forEach((category) => {
+  //     items.push(...category.items);
+  //   });
+  //   return items;
+  // }, [navigationData]);
 
   // 过滤分类
   const filteredCategories = useMemo(() => {
