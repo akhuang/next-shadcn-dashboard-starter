@@ -85,6 +85,9 @@ COPY --from=deps /app/node_modules ./node_modules
 # 复制代码（放在最后，代码变动只影响这层之后）
 COPY . .
 
+# 生成 Prisma 客户端
+RUN pnpm run db:generate
+
 # 构建应用
 RUN pnpm run build
 
