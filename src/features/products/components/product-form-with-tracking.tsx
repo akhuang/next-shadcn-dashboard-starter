@@ -176,7 +176,9 @@ export default function ProductFormWithTracking({
                         }}
                         maxFiles={1}
                         maxSize={5 * 1024 * 1024}
-                        accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                        accept={{
+                          'image/*': ACCEPTED_IMAGE_TYPES
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
