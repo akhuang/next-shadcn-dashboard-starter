@@ -16,10 +16,10 @@
   - Nginx 反向代理
   - 容器管理和维护
 
-- [**行为分析**](ANALYTICS_GUIDE.md) - PostHog 集成指南
+- [**行为分析**](ANALYTICS_GUIDE.md) - Umami 集成指南
   - 页面/事件采集
-  - 登录用户识别
-  - 自建或云端部署
+  - 域账号用户识别
+  - 自动追踪路由变化
 
 ## 🔧 功能模块
 
@@ -41,11 +41,11 @@
 - **框架**: Next.js 15 + React 19
 - **语言**: TypeScript
 - **样式**: Tailwind CSS v4 + shadcn/ui
-- **认证**: Clerk（支持无密钥模式）
+- **认证**: 域账号认证（LDAP/AD）+ Mock 认证（开发环境）
 - **状态管理**: Zustand
 - **表单**: React Hook Form + Zod
 - **表格**: Tanstack Table
-- **分析**: PostHog（云端或自建）
+- **分析**: Umami 用户追踪
 - **错误追踪**: Sentry
 
 ### 项目结构
@@ -74,7 +74,7 @@ pnpm run lint     # 代码检查
 ./scripts/deploy-env.sh prod -b -u  # 生产环境
 
 # 分析服务
-# 使用 PostHog（无需本地启动服务），配置 NEXT_PUBLIC_POSTHOG_KEY 即可
+# 使用 Umami（需要配置服务器地址和网站ID）
 ```
 
 ## 🔍 特殊配置
@@ -98,7 +98,7 @@ pnpm run lint     # 代码检查
 ## 📊 监控与分析
 
 - **健康检查**: `/api/health` 端点
-- **访问分析**: PostHog（云端或自建）
+- **访问分析**: Umami 用户追踪
 - **错误追踪**: Sentry 集成（可选）
 - **性能监控**: 实时指标面板
 

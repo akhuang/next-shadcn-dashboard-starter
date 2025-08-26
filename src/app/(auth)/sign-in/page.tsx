@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Lock, User, Info } from 'lucide-react';
+import { umamiService } from '@/lib/umami-service';
 
 interface MockUser {
   username: string;
@@ -32,6 +33,9 @@ export default function SignInPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Initialize Umami
+    umamiService.initialize();
+
     // Check if we're in development mode
     fetch('/api/auth/mock-users')
       .then((res) => {
@@ -56,6 +60,12 @@ export default function SignInPage() {
     setError('');
     setLoading(true);
 
+    // 追踪登录尝试
+    umamiService.track('login_attempt', {
+      username: username,
+      authMode: isDevelopment ? 'development' : 'production'
+    });
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -68,14 +78,42 @@ export default function SignInPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // 追踪登录失败
+        umamiService.track('login_failed', {
+          username: username,
+          error: data.error || '登录失败',
+          authMode: isDevelopment ? 'development' : 'production'
+        });
+
         setError(data.error || '登录失败');
         setLoading(false);
         return;
       }
 
+      // 追踪登录成功并识别用户
+      umamiService.track('login_success', {
+        username: data.user.username,
+        department: data.user.department,
+        authMode: isDevelopment ? 'development' : 'production'
+      });
+
+      // 识别域账号用户
+      umamiService.identify(data.user.username, {
+        id: data.user.username,
+        email: data.user.email,
+        domainAccount: data.user.username,
+        department: data.user.department
+      });
+
+      // 触发 storage 事件以通知其他组件
+      localStorage.setItem('auth-status', 'logged-in');
+
       // Redirect to dashboard
       router.push('/dashboard/overview');
     } catch (err) {
+      // 追踪网络错误
+      umamiService.trackError(err as Error, 'login_network_error');
+
       setError('网络错误，请稍后重试');
       setLoading(false);
     }
@@ -88,6 +126,12 @@ export default function SignInPage() {
     if (passwordMatch) {
       setPassword(passwordMatch[1]);
     }
+
+    // 追踪快速登录点击
+    umamiService.track('quick_login_click', {
+      username: user.username,
+      displayName: user.displayName
+    });
   };
 
   return (

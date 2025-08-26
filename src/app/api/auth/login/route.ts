@@ -63,6 +63,9 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 8 // 8 hours
     });
 
+    // 触发前端的 storage 事件以更新 Umami 追踪
+    response.headers.set('X-Auth-Status', 'logged-in');
+
     return response;
   } catch (error) {
     logger.error('Login error:', error);

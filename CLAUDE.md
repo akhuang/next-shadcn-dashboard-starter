@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **框架**: Next.js 15 App Router
 - **语言**: TypeScript
 - **样式**: Tailwind CSS v4 + shadcn/ui
-- **认证**: Clerk（支持无密钥模式）
+- **认证**: 域账号认证（LDAP/AD）+ Mock 认证（开发环境）
 - **状态管理**: Zustand
 - **表单**: React Hook Form + Zod
 - **表格**: Tanstack Table
@@ -102,10 +102,10 @@ pnpm run format:check
 
 ### 环境配置
 
-- 复制 `env.example.txt` 为 `.env.local`（本地开发）
+- 复制 `env.example` 为 `.env.local`（本地开发）
 - 复制 `scripts/docker/.env.prod.example` 为 `.env.prod`（Docker 生产部署）
-- Clerk 认证支持无密钥模式，可以立即开始开发
-- PostHog 行为分析（云端或自建）
+- 域账号认证（生产环境）或 Mock 认证（开发环境）
+- Umami 用户行为追踪（需要配置服务器地址和网站ID）
 - Sentry 错误追踪需要配置相应的环境变量
 
 ## 开发注意事项

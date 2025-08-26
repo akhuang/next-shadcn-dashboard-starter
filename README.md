@@ -218,14 +218,16 @@ Nginx 配置模板：`scripts/docker/nginx/portal.conf.template`
 ./scripts/deploy-env.sh prod -d && ./scripts/deploy-env.sh prod -u
 ```
 
-## 📊 用户行为分析（PostHog）
+## 📊 用户行为分析（Umami）
 
-已内置 PostHog 前端 SDK 与用户识别：
+已集成 Umami 用户追踪系统，支持域账号识别：
 
 - 设置环境变量：
-  - `NEXT_PUBLIC_POSTHOG_KEY`（必填）
-  - `NEXT_PUBLIC_POSTHOG_HOST`（可选，默认为 `https://us.i.posthog.com`；自建请填你的域名）
-- 登录后会自动调用 `identify` 绑定邮箱/用户名；常用事件可通过 `src/lib/analytics.ts` 直接调用。
+  - `NEXT_PUBLIC_UMAMI_URL` - Umami 服务器地址
+  - `NEXT_PUBLIC_UMAMI_WEBSITE_ID` - 网站 ID
+- 登录后会自动识别域账号用户
+- 自动追踪页面浏览和用户操作
+- 测试页面：`/dashboard/test-umami`
 
 更多说明见 [行为分析指南](docs/ANALYTICS_GUIDE.md)。
 
@@ -270,7 +272,7 @@ rm -rf certs/
 ## 🌟 特性
 
 - ✅ **多环境部署**: 开发和生产环境完全隔离
-- ✅ **行为分析**: 集成 PostHog（云端或自建）
+- ✅ **行为分析**: 集成 Umami 用户追踪
 - ✅ **iframe 嵌入**: 支持绕过 X-Frame-Options 限制
 - ✅ **Docker 容器化**: 一键构建部署
 - ✅ **SSL/HTTPS**: 自动生成自签名证书
@@ -286,7 +288,7 @@ rm -rf certs/
 |------|------|
 | [CLAUDE.md](CLAUDE.md) | Claude AI 使用指南和项目结构说明 |
 | [Docker 部署指南](docs/DOCKER_DEPLOYMENT.md) | 完整的 Docker 部署文档 |
-| [行为分析指南](docs/ANALYTICS_GUIDE.md) | PostHog 集成与使用说明 |
+| [行为分析指南](docs/ANALYTICS_GUIDE.md) | Umami 集成与使用说明 |
 | [内部导航指南](docs/NAVIGATION_GUIDE.md) | 内部导航系统配置和使用 |
 | [AD 认证设置](docs/AD_AUTH_SETUP.md) | Active Directory 认证集成 |
 | [环境变量示例](env.example.txt) | 环境变量配置模板 |
