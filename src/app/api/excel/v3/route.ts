@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { excelAsyncCacheService } from '@/lib/excel-async-cache-service';
 import { logger } from '@/lib/logger';
 
+// 创建无缓存响应
+function createNoCacheResponse(data: any, status: number = 200) {
+  return createNoCacheResponse(data, {
+    status,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      Pragma: 'no-cache',
+      Expires: '0'
+    }
+  });
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const action = searchParams.get('action');
@@ -11,13 +23,13 @@ export async function GET(request: NextRequest) {
       case 'setFolder': {
         const folderPath = searchParams.get('folderPath');
         if (!folderPath) {
-          return NextResponse.json(
+          return createNoCacheResponse(
             { error: 'Folder path is required' },
-            { status: 400 }
+            400
           );
         }
         const taskId = await excelAsyncCacheService.setFolderPath(folderPath);
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           taskId,
           message: 'Folder path set, data is being cached in background'
@@ -27,7 +39,7 @@ export async function GET(request: NextRequest) {
       case 'getFiles': {
         const files = await excelAsyncCacheService.getFiles();
         const lastUpdate = await excelAsyncCacheService.getLastUpdate();
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: {
             files,
@@ -38,7 +50,7 @@ export async function GET(request: NextRequest) {
 
       case 'getCacheStatus': {
         const status = await excelAsyncCacheService.getCacheStatus();
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: status
         });
@@ -47,13 +59,10 @@ export async function GET(request: NextRequest) {
       case 'getTaskStatus': {
         const taskId = searchParams.get('taskId');
         if (!taskId) {
-          return NextResponse.json(
-            { error: 'Task ID is required' },
-            { status: 400 }
-          );
+          return createNoCacheResponse({ error: 'Task ID is required' }, 400);
         }
         const status = await excelAsyncCacheService.getTaskStatus(taskId);
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: status
         });
@@ -62,13 +71,10 @@ export async function GET(request: NextRequest) {
       case 'getSheets': {
         const fileName = searchParams.get('fileName');
         if (!fileName) {
-          return NextResponse.json(
-            { error: 'File name is required' },
-            { status: 400 }
-          );
+          return createNoCacheResponse({ error: 'File name is required' }, 400);
         }
         const sheets = await excelAsyncCacheService.getFileSheets(fileName);
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: sheets
         });
@@ -78,16 +84,16 @@ export async function GET(request: NextRequest) {
         const fileName = searchParams.get('fileName');
         const sheetName = searchParams.get('sheetName');
         if (!fileName || !sheetName) {
-          return NextResponse.json(
+          return createNoCacheResponse(
             { error: 'File name and sheet name are required' },
-            { status: 400 }
+            400
           );
         }
         const info = await excelAsyncCacheService.getSheetInfo(
           fileName,
           sheetName
         );
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: info
         });
@@ -100,9 +106,9 @@ export async function GET(request: NextRequest) {
         const pageSize = parseInt(searchParams.get('pageSize') || '100');
 
         if (!fileName || !sheetName) {
-          return NextResponse.json(
+          return createNoCacheResponse(
             { error: 'File name and sheet name are required' },
-            { status: 400 }
+            400
           );
         }
 
@@ -112,7 +118,7 @@ export async function GET(request: NextRequest) {
           page,
           pageSize
         );
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: result
         });
@@ -128,23 +134,23 @@ export async function GET(request: NextRequest) {
           page,
           pageSize
         );
-        return NextResponse.json({
+        return createNoCacheResponse({
           success: true,
           data: result
         });
       }
 
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        return createNoCacheResponse({ error: 'Invalid action' }, 400);
     }
   } catch (error) {
     logger.error('API error:', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
+      500
     );
   }
 }

@@ -212,7 +212,8 @@ export default function ContactWorkspace() {
       setLoadingSheet(true);
       try {
         const response = await fetch(
-          `/api/excel/v3?action=getSheetData&fileName=${encodeURIComponent(fileName)}&sheetName=${encodeURIComponent(sheetName)}&page=${page}&pageSize=${pageSize}`
+          `/api/excel/v3?action=getSheetData&fileName=${encodeURIComponent(fileName)}&sheetName=${encodeURIComponent(sheetName)}&page=${page}&pageSize=${pageSize}`,
+          { cache: 'no-store' }
         );
         const result = await response.json();
 
@@ -253,7 +254,8 @@ export default function ContactWorkspace() {
     setSearchLoading(true);
     try {
       const response = await fetch(
-        `/api/excel/v3?action=search&query=${encodeURIComponent(trimmedQuery)}&page=1&pageSize=100`
+        `/api/excel/v3?action=search&query=${encodeURIComponent(trimmedQuery)}&page=1&pageSize=100`,
+        { cache: 'no-store' }
       );
       const result = await response.json();
 
@@ -302,7 +304,9 @@ export default function ContactWorkspace() {
   const loadFilesList = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/excel/v3?action=getFiles');
+      const response = await fetch('/api/excel/v3?action=getFiles', {
+        cache: 'no-store' // 禁用缓存，确保获取最新数据
+      });
       const result = await response.json();
 
       if (result.success && result.data.files) {
@@ -384,7 +388,8 @@ export default function ContactWorkspace() {
       }
       try {
         const response = await fetch(
-          `/api/excel/v3?action=getSheetInfo&fileName=${encodeURIComponent(fileName)}&sheetName=${encodeURIComponent(sheetName)}`
+          `/api/excel/v3?action=getSheetInfo&fileName=${encodeURIComponent(fileName)}&sheetName=${encodeURIComponent(sheetName)}`,
+          { cache: 'no-store' }
         );
         const result = await response.json();
 

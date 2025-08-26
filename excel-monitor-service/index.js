@@ -227,6 +227,9 @@ async function processQueue() {
   serviceStatus.lastUpdate = new Date();
   isProcessing = false;
 
+  // Update file list in Redis
+  await updateFilesList();
+
   // Update last update time
   await redis.set(REDIS_KEYS.LAST_UPDATE, new Date().toISOString());
 }
@@ -430,6 +433,32 @@ function processMergedCells(data, merges) {
   return result;
 }
 
+// Update files list in Redis
+async function updateFilesList() {
+  try {
+    const files = fs.readdirSync(WATCH_DIR);
+    const excelFiles = files.filter((file) => {
+      const ext = path.extname(file).toLowerCase();
+      return SUPPORTED_EXTENSIONS.includes(ext);
+    });
+
+    console.log(`Updating file list: ${excelFiles.length} files found`);
+
+    // Store updated file list in Redis
+    await redis.set(
+      REDIS_KEYS.FILES,
+      JSON.stringify(excelFiles),
+      'EX',
+      CACHE_TTL.DEFAULT
+    );
+
+    return excelFiles;
+  } catch (error) {
+    console.error('Error updating files list:', error);
+    return [];
+  }
+}
+
 // Remove file from cache
 async function removeFileFromCache(fileName) {
   try {
@@ -458,17 +487,7 @@ async function removeFileFromCache(fileName) {
     }
 
     // Update file list
-    const filesJson = await redis.get(REDIS_KEYS.FILES);
-    if (filesJson) {
-      const files = JSON.parse(filesJson);
-      const updatedFiles = files.filter((f) => f !== fileName);
-      await redis.set(
-        REDIS_KEYS.FILES,
-        JSON.stringify(updatedFiles),
-        'EX',
-        CACHE_TTL.DEFAULT
-      );
-    }
+    await updateFilesList();
 
     console.log(`Removed from cache: ${fileName}`);
   } catch (error) {
