@@ -70,6 +70,15 @@ pnpm run format:check
 - `@/*` 对应 `./src/*`
 - `~/*` 对应 `./public/*`
 
+### 代码风格与命名约定
+
+- **TypeScript**: 严格类型检查，2 空格缩进，单引号，分号
+- **Prettier 配置**: 见 `.prettierrc`（含 Tailwind 插件）
+- **ESLint**: 基于 `next/core-web-vitals`，规则见 `.eslintrc.json`
+- **组件命名**: 使用 PascalCase（如 `UserCard.tsx`）
+- **Hook 命名**: 以 `useX.ts` 命名
+- **功能代码**: 按 `src/features/<feature>/` 就近组织
+
 ### 组件开发
 
 - 使用 shadcn/ui 组件库，配置文件在 `components.json`
@@ -94,11 +103,22 @@ pnpm run format:check
 - Store 文件放在 `src/stores/` 或功能特定的 `utils/store.ts`
 - 参考看板功能的状态管理实现
 
-### Git Hooks
+### 测试规范
 
-- 项目配置了 Husky + lint-staged
-- pre-commit: 运行 lint-staged（格式化代码）
-- pre-push: 运行构建检查
+- **框架**: Vitest（`vitest.config.ts`），环境 `jsdom`，全局启用
+- **初始化**: 测试初始化于 `src/test/setup.ts`
+- **用例命名**: `*.test.ts(x)`；就近或置于 `src/test/`
+- **组件测试**: 推荐使用 Testing Library
+- **覆盖率**: 以"关键路径可用"为原则
+
+### Git Hooks 与提交规范
+
+- **Git Hooks**: 项目配置了 Husky + lint-staged
+  - pre-commit: 运行 lint-staged（格式化代码）
+  - pre-push: 运行构建检查
+- **提交信息**: 简洁、祈使、可选作用域，如 `feat(table): add column filters`
+- **推送前执行**: `pnpm format`、`pnpm lint`、`pnpm test`
+- **PR 规范**: 需包含变更说明、关联 Issue、UI 变更截图、是否有破坏性变更与新环境变量
 
 ### 环境配置
 
@@ -107,6 +127,7 @@ pnpm run format:check
 - 域账号认证（生产环境）或 Mock 认证（开发环境）
 - Umami 用户行为追踪（需要配置服务器地址和网站ID）
 - Sentry 错误追踪需要配置相应的环境变量
+- **安全**: 敏感信息勿入库，Docker/NGINX/SSL 请参考 `docs/` 与 `scripts/`
 
 ## 开发注意事项
 

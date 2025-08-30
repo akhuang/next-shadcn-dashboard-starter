@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "TS typecheck and unit tests",
+			"type": "shell",
+			"command": "pnpm -s -w run -s check && pnpm -s -w test -s -- --run",
+			"args": [],
+			"problemMatcher": [
+				"$tsc",
+				"$eslint-stylish"
+			],
+			"group": "build"
+		}
+	]
+}
