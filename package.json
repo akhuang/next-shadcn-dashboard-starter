@@ -24,7 +24,13 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "excel:generate": "node scripts/generate-all-test-data.js",
+    "excel:clean": "node scripts/clean-test-data.js",
+    "excel:monitor": "node scripts/start-excel-monitor.js",
+    "excel:status": "node scripts/start-excel-monitor.js status",
+    "excel:logs": "node scripts/start-excel-monitor.js logs",
+    "excel:setup": "npm run excel:clean && npm run excel:generate"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
@@ -138,6 +144,7 @@
     "prettier": "3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "prisma": "^6.14.0",
+    "redis": "^5.8.2",
     "tsx": "^4.20.4",
     "tw-animate-css": "^1.2.4",
     "vitest": "^3.2.4"

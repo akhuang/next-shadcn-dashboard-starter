@@ -32,6 +32,11 @@ const MONITOR_CONFIGS = {
     watchDir: process.env.NAVIGATION_EXCEL_DIR || '/tmp/test-navigation',
     redisPrefix: 'navigation',
     processor: 'navigation'
+  },
+  reports_business1: {
+    watchDir: process.env.REPORTS_BUSINESS1_DIR || '/tmp/reports-business1',
+    redisPrefix: 'reports:business1',
+    processor: 'default' // 使用与联系人相同的处理逻辑
   }
 };
 
@@ -57,6 +62,21 @@ const CONTACT_REDIS_KEYS = {
   CACHE_STATUS: 'excel:cache:status',
   FILE_STATUS: (fileName) => `excel:file:${fileName}:cache_status`
 };
+
+// 动态生成报表的 Redis 键（支持多个报表）
+const getReportRedisKeys = (prefix) => ({
+  FILES: `${prefix}:files`,
+  FILE_SHEETS: (fileName) => `${prefix}:file:${fileName}:sheets`,
+  SHEET_INFO: (fileName, sheetName) =>
+    `${prefix}:sheet:${fileName}:${sheetName}:info`,
+  SHEET_DATA: (fileName, sheetName, page) =>
+    `${prefix}:sheet:${fileName}:${sheetName}:data:${page}`,
+  SHEET_TOTAL: (fileName, sheetName) =>
+    `${prefix}:sheet:${fileName}:${sheetName}:total`,
+  LAST_UPDATE: `${prefix}:last_update`,
+  CACHE_STATUS: `${prefix}:cache:status`,
+  FILE_STATUS: (fileName) => `${prefix}:file:${fileName}:cache_status`
+});
 
 const CACHE_TTL = {
   DEFAULT: 3600,
@@ -145,9 +165,9 @@ async function scanDirectory(type, config) {
 
     console.log(`[${type}] Found ${excelFiles.length} Excel files`);
 
-    // Initialize FILES list for contacts
+    // Initialize FILES list for contacts and reports
     if (config.processor === 'default') {
-      await updateFilesList('reset', excelFiles);
+      await updateFilesList('reset', excelFiles, config.redisPrefix);
     }
 
     // Process each file
@@ -157,6 +177,12 @@ async function scanDirectory(type, config) {
 
     // Process queue
     await processQueue(type, config);
+
+    // Set initial last update time for this data source
+    await redis.set(
+      `${config.redisPrefix}:last_update`,
+      new Date().toISOString()
+    );
   } catch (error) {
     console.error(`[${type}] Error scanning directory:`, error);
     serviceStatus.errors.push({
@@ -204,12 +230,8 @@ function setupWatcher(type, config) {
       const fileName = path.basename(filePath);
       console.log(`[${type}] File removed: ${fileName}`);
 
-      if (config.processor === 'navigation') {
-        // For navigation, we might want to keep the cache
-        console.log(`[${type}] Navigation file removed, cache retained`);
-      } else {
-        await removeFileFromCache(type, fileName, config);
-      }
+      // Always remove cache to maintain consistency
+      await removeFileFromCache(type, fileName, config);
     })
     .on('error', (error) => {
       console.error(`[${type}] Watcher error:`, error);
@@ -295,6 +317,9 @@ async function processNavigationFile(fileInfo, config) {
     `[navigation] Reading file: ${fileName} (${(size / 1024).toFixed(2)} KB)`
   );
 
+  // Generate cache version based on file stats
+  const cacheVersion = `${modifiedTime.getTime()}_${size}`;
+
   // Read file
   const fileBuffer = fs.readFileSync(filePath);
   const workbook = XLSX.read(fileBuffer, {
@@ -359,10 +384,14 @@ async function processNavigationFile(fileInfo, config) {
       size: size,
       itemCount: jsonData.length,
       categoryCount: categories.length,
-      cached: true
+      cached: true,
+      cacheVersion: cacheVersion
     })
     // 移除 TTL
   );
+
+  // Clear invalid flag if exists
+  await redis.del('navigation:cache:invalid');
 
   console.log(
     `[navigation] Completed processing: ${fileName} (${jsonData.length} items in ${categories.length} categories)`
@@ -373,8 +402,17 @@ async function processNavigationFile(fileInfo, config) {
 async function processContactFile(fileInfo, config) {
   const { fileName, filePath, modifiedTime, size } = fileInfo;
 
+  // 根据配置选择正确的 Redis 键集合
+  const KEYS =
+    config.redisPrefix === 'excel'
+      ? CONTACT_REDIS_KEYS
+      : getReportRedisKeys(config.redisPrefix);
+
+  // Generate cache version based on file stats
+  const cacheVersion = `${modifiedTime.getTime()}_${size}`;
+
   console.log(
-    `[contacts] Reading file: ${fileName} (${(size / 1024).toFixed(2)} KB)`
+    `[${config.redisPrefix}] Reading file: ${fileName} (${(size / 1024).toFixed(2)} KB)`
   );
 
   // Read file
@@ -408,55 +446,108 @@ async function processContactFile(fileInfo, config) {
     // Process merged cells
     const processedData = processMergedCells(jsonData, merges);
 
-    // Store in pages (existing logic)
+    // Extract headers from first row
+    const headers = processedData[0] || [];
+
+    // Convert to Contact format (skip header row)
+    const contacts = [];
+    for (let i = 1; i < processedData.length; i++) {
+      const row = processedData[i];
+      const rowData = {};
+
+      // Build rowData object
+      headers.forEach((header, index) => {
+        if (header) {
+          rowData[header] = row[index] || '';
+        }
+      });
+
+      // Create searchable text
+      const searchableText = Object.values(rowData)
+        .filter((v) => v)
+        .join(' ')
+        .toLowerCase();
+
+      // Create contact object
+      const contact = {
+        id: `${fileName}_${sheetName}_row${i}`,
+        fileName,
+        sheetName,
+        rowData,
+        searchableText
+      };
+
+      contacts.push(contact);
+    }
+
+    // Store sheet info
+    await redis.set(
+      KEYS.SHEET_INFO(fileName, sheetName),
+      JSON.stringify({
+        name: sheetName,
+        columns: headers,
+        mergeRanges: merges,
+        totalRows: contacts.length
+      })
+      // 移除 TTL
+    );
+
+    // Store in pages
     const PAGE_SIZE = 100;
-    const totalPages = Math.ceil(processedData.length / PAGE_SIZE);
+    const totalPages = Math.ceil(contacts.length / PAGE_SIZE);
 
     for (let page = 1; page <= totalPages; page++) {
       const startIdx = (page - 1) * PAGE_SIZE;
-      const endIdx = Math.min(startIdx + PAGE_SIZE, processedData.length);
-      const pageData = processedData.slice(startIdx, endIdx);
+      const endIdx = Math.min(startIdx + PAGE_SIZE, contacts.length);
+      const pageData = contacts.slice(startIdx, endIdx);
 
       await redis.set(
-        CONTACT_REDIS_KEYS.SHEET_DATA(fileName, sheetName, page),
+        KEYS.SHEET_DATA(fileName, sheetName, page),
         JSON.stringify(pageData)
         // 移除 TTL - 缓存永久有效，仅在文件更新时刷新
       );
     }
 
     await redis.set(
-      CONTACT_REDIS_KEYS.SHEET_TOTAL(fileName, sheetName),
-      processedData.length
+      KEYS.SHEET_TOTAL(fileName, sheetName),
+      contacts.length
       // 移除 TTL
     );
 
     console.log(
-      `[contacts]   - Processed sheet: ${sheetName} (${processedData.length} rows)`
+      `[${config.redisPrefix}]   - Processed sheet: ${sheetName} (${contacts.length} contacts)`
     );
   }
 
   // Store file metadata
   await redis.set(
-    CONTACT_REDIS_KEYS.FILE_SHEETS(fileName),
+    KEYS.FILE_SHEETS(fileName),
     JSON.stringify(sheetNames)
     // 移除 TTL - 缓存永久有效，仅在文件更新时刷新
   );
 
   await redis.set(
-    CONTACT_REDIS_KEYS.FILE_STATUS(fileName),
+    KEYS.FILE_STATUS(fileName),
     JSON.stringify({
       cached: true,
       lastModified: modifiedTime,
       size: size,
-      sheets: sheetNames
+      sheets: sheetNames,
+      cacheVersion: cacheVersion
     })
     // 移除 TTL
   );
 
   // 更新文件列表
-  await updateFilesList('add', fileName);
+  await updateFilesList('add', fileName, config.redisPrefix);
 
-  console.log(`[contacts] Completed processing: ${fileName}`);
+  // 更新最后处理时间
+  await redis.set(
+    `${config.redisPrefix}:last_update`,
+    new Date().toISOString()
+  );
+
+  console.log(`[${config.redisPrefix}] Completed processing: ${fileName}`);
 }
 
 // Process merged cells (for contacts)
@@ -485,31 +576,39 @@ function processMergedCells(data, merges) {
 }
 
 // Update files list in Redis
-async function updateFilesList(action, fileName) {
+async function updateFilesList(action, fileName, redisPrefix = 'excel') {
   try {
+    // 根据 redisPrefix 选择正确的 Redis 键
+    const KEYS =
+      redisPrefix === 'excel'
+        ? CONTACT_REDIS_KEYS
+        : getReportRedisKeys(redisPrefix);
+
     // Get current files list
-    const filesJson = await redis.get(CONTACT_REDIS_KEYS.FILES);
+    const filesJson = await redis.get(KEYS.FILES);
     let files = filesJson ? JSON.parse(filesJson) : [];
 
     if (action === 'add') {
       // Add file if not exists
       if (!files.includes(fileName)) {
         files.push(fileName);
-        console.log(`[contacts] Added ${fileName} to files list`);
+        console.log(`[${redisPrefix}] Added ${fileName} to files list`);
       }
     } else if (action === 'remove') {
       // Remove file from list
       files = files.filter((f) => f !== fileName);
-      console.log(`[contacts] Removed ${fileName} from files list`);
+      console.log(`[${redisPrefix}] Removed ${fileName} from files list`);
     } else if (action === 'reset') {
       // Reset with provided list (fileName is actually an array in this case)
       files = fileName;
-      console.log(`[contacts] Reset files list with ${files.length} files`);
+      console.log(
+        `[${redisPrefix}] Reset files list with ${files.length} files`
+      );
     }
 
     // Update Redis
     await redis.set(
-      CONTACT_REDIS_KEYS.FILES,
+      KEYS.FILES,
       JSON.stringify(files)
       // 不设置 TTL，永久有效
     );
@@ -518,28 +617,40 @@ async function updateFilesList(action, fileName) {
   }
 }
 
-// Remove file from cache (for contacts)
+// Remove file from cache
 async function removeFileFromCache(type, fileName, config) {
-  if (config.processor === 'navigation') {
-    // Navigation files are handled differently
-    return;
-  }
-
   try {
+    if (config.processor === 'navigation') {
+      // Clear navigation cache
+      console.log(`[${type}] Clearing navigation cache for: ${fileName}`);
+      await redis.del(NAVIGATION_REDIS_KEYS.DATA);
+      await redis.del(NAVIGATION_REDIS_KEYS.LAST_UPDATE);
+      await redis.del(NAVIGATION_REDIS_KEYS.FILE_STATUS);
+
+      // Mark cache as invalid
+      await redis.set('navigation:cache:invalid', 'true');
+
+      console.log(`[${type}] Navigation cache cleared`);
+      return;
+    }
+    // \u6839\u636e\u914d\u7f6e\u9009\u62e9\u6b63\u786e\u7684 Redis \u952e\u96c6\u5408
+    const KEYS =
+      config.redisPrefix === 'excel'
+        ? CONTACT_REDIS_KEYS
+        : getReportRedisKeys(config.redisPrefix);
+
     // Get sheet names
-    const sheetsJson = await redis.get(
-      CONTACT_REDIS_KEYS.FILE_SHEETS(fileName)
-    );
+    const sheetsJson = await redis.get(KEYS.FILE_SHEETS(fileName));
     if (sheetsJson) {
       const sheets = JSON.parse(sheetsJson);
 
       // Delete all sheet data
       for (const sheetName of sheets) {
-        await redis.del(CONTACT_REDIS_KEYS.SHEET_INFO(fileName, sheetName));
-        await redis.del(CONTACT_REDIS_KEYS.SHEET_TOTAL(fileName, sheetName));
+        await redis.del(KEYS.SHEET_INFO(fileName, sheetName));
+        await redis.del(KEYS.SHEET_TOTAL(fileName, sheetName));
 
         // Delete all pages
-        const pattern = `excel:sheet:${fileName}:${sheetName}:data:*`;
+        const pattern = `${config.redisPrefix}:sheet:${fileName}:${sheetName}:data:*`;
         const keys = await redis.keys(pattern);
         if (keys.length > 0) {
           await redis.del(...keys);
@@ -547,12 +658,12 @@ async function removeFileFromCache(type, fileName, config) {
       }
 
       // Delete file metadata
-      await redis.del(CONTACT_REDIS_KEYS.FILE_SHEETS(fileName));
-      await redis.del(CONTACT_REDIS_KEYS.FILE_STATUS(fileName));
+      await redis.del(KEYS.FILE_SHEETS(fileName));
+      await redis.del(KEYS.FILE_STATUS(fileName));
     }
 
     // 更新文件列表
-    await updateFilesList('remove', fileName);
+    await updateFilesList('remove', fileName, config.redisPrefix);
 
     console.log(`[${type}] Removed from cache: ${fileName}`);
   } catch (error) {

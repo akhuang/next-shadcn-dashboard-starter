@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 // 创建无缓存响应
 function createNoCacheResponse(data: any, status: number = 200) {
-  return createNoCacheResponse(data, {
+  return NextResponse.json(data, {
     status,
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
@@ -37,8 +37,11 @@ export async function GET(request: NextRequest) {
       }
 
       case 'getFiles': {
-        const files = await excelAsyncCacheService.getFiles();
-        const lastUpdate = await excelAsyncCacheService.getLastUpdate();
+        const dataSource = searchParams.get('dataSource') || 'excel';
+        const files =
+          await excelAsyncCacheService.getAvailableFiles(dataSource);
+        const lastUpdate =
+          await excelAsyncCacheService.getLastUpdate(dataSource);
         return createNoCacheResponse({
           success: true,
           data: {
@@ -70,10 +73,14 @@ export async function GET(request: NextRequest) {
 
       case 'getSheets': {
         const fileName = searchParams.get('fileName');
+        const dataSource = searchParams.get('dataSource') || 'excel';
         if (!fileName) {
           return createNoCacheResponse({ error: 'File name is required' }, 400);
         }
-        const sheets = await excelAsyncCacheService.getFileSheets(fileName);
+        const sheets = await excelAsyncCacheService.getFileSheets(
+          fileName,
+          dataSource
+        );
         return createNoCacheResponse({
           success: true,
           data: sheets
@@ -83,6 +90,7 @@ export async function GET(request: NextRequest) {
       case 'getSheetInfo': {
         const fileName = searchParams.get('fileName');
         const sheetName = searchParams.get('sheetName');
+        const dataSource = searchParams.get('dataSource') || 'excel';
         if (!fileName || !sheetName) {
           return createNoCacheResponse(
             { error: 'File name and sheet name are required' },
@@ -91,7 +99,8 @@ export async function GET(request: NextRequest) {
         }
         const info = await excelAsyncCacheService.getSheetInfo(
           fileName,
-          sheetName
+          sheetName,
+          dataSource
         );
         return createNoCacheResponse({
           success: true,
@@ -102,6 +111,7 @@ export async function GET(request: NextRequest) {
       case 'getSheetData': {
         const fileName = searchParams.get('fileName');
         const sheetName = searchParams.get('sheetName');
+        const dataSource = searchParams.get('dataSource') || 'excel';
         const page = parseInt(searchParams.get('page') || '1');
         const pageSize = parseInt(searchParams.get('pageSize') || '100');
 
@@ -112,11 +122,12 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        const result = await excelAsyncCacheService.getSheetData(
+        const result = await excelAsyncCacheService.getPaginatedData(
           fileName,
           sheetName,
           page,
-          pageSize
+          pageSize,
+          dataSource
         );
         return createNoCacheResponse({
           success: true,
@@ -126,13 +137,15 @@ export async function GET(request: NextRequest) {
 
       case 'search': {
         const query = searchParams.get('query') || '';
+        const dataSource = searchParams.get('dataSource') || 'excel';
         const page = parseInt(searchParams.get('page') || '1');
         const pageSize = parseInt(searchParams.get('pageSize') || '50');
 
         const result = await excelAsyncCacheService.searchContacts(
           query,
           page,
-          pageSize
+          pageSize,
+          dataSource
         );
         return createNoCacheResponse({
           success: true,

@@ -92,6 +92,14 @@ export const navItems: NavItem[] = [
     items: [] // No child items
   },
   {
+    title: '经营报表1',
+    url: '/dashboard/reports/business1',
+    icon: 'chartBar',
+    shortcut: ['r', '1'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
     title: '字体测试',
     url: '/dashboard/font-test',
     icon: 'dashboard',

@@ -40,19 +40,42 @@ interface ServiceStatus {
 class ExcelAsyncCacheService {
   private pageSize: number = 100;
 
+  // 动态生成 Redis 键
+  private getRedisKeys(dataSource: string = 'excel') {
+    return {
+      FILES: `${dataSource}:files`,
+      FILE_INFO: (fileName: string) => `${dataSource}:file:${fileName}:info`,
+      FILE_SHEETS: (fileName: string) =>
+        `${dataSource}:file:${fileName}:sheets`,
+      FILE_CACHE_STATUS: (fileName: string) =>
+        `${dataSource}:file:${fileName}:cache_status`,
+      SHEET_INFO: (fileName: string, sheetName: string) =>
+        `${dataSource}:sheet:${fileName}:${sheetName}:info`,
+      SHEET_DATA: (fileName: string, sheetName: string, page: number) =>
+        `${dataSource}:sheet:${fileName}:${sheetName}:data:${page}`,
+      SHEET_TOTAL: (fileName: string, sheetName: string) =>
+        `${dataSource}:sheet:${fileName}:${sheetName}:total`,
+      SEARCH_INDEX: `${dataSource}:search:index`,
+      LAST_UPDATE: `${dataSource}:last_update`,
+      CACHE_STATUS: (taskId: string) => `${dataSource}:cache:status:${taskId}`,
+      CACHE_PROGRESS: (taskId: string) =>
+        `${dataSource}:cache:progress:${taskId}`,
+      CACHE_GLOBAL_STATUS: `${dataSource}:cache:global_status`
+    };
+  }
+
   // Get all available files from Redis
-  async getAvailableFiles(): Promise<FileInfo[]> {
+  async getAvailableFiles(dataSource: string = 'excel'): Promise<FileInfo[]> {
+    const KEYS = this.getRedisKeys(dataSource);
     try {
-      const filesJson = await redis.get(REDIS_KEYS.FILES);
+      const filesJson = await redis.get(KEYS.FILES);
       if (!filesJson) return [];
 
       const fileNames = JSON.parse(filesJson) as string[];
       const fileInfos: FileInfo[] = [];
 
       for (const fileName of fileNames) {
-        const statusJson = await redis.get(
-          `excel:file:${fileName}:cache_status`
-        );
+        const statusJson = await redis.get(KEYS.FILE_CACHE_STATUS(fileName));
         if (statusJson) {
           const status = JSON.parse(statusJson);
           fileInfos.push({
@@ -75,12 +98,12 @@ class ExcelAsyncCacheService {
   // Get sheet info from Redis
   async getSheetInfo(
     fileName: string,
-    sheetName: string
+    sheetName: string,
+    dataSource: string = 'excel'
   ): Promise<SheetInfo | null> {
+    const KEYS = this.getRedisKeys(dataSource);
     try {
-      const infoJson = await redis.get(
-        REDIS_KEYS.SHEET_INFO(fileName, sheetName)
-      );
+      const infoJson = await redis.get(KEYS.SHEET_INFO(fileName, sheetName));
       if (!infoJson) return null;
 
       const cachedInfo = JSON.parse(infoJson) as CachedSheetInfo;
@@ -90,6 +113,7 @@ class ExcelAsyncCacheService {
         columns: cachedInfo.columns,
         mergeRanges: cachedInfo.mergeRanges,
         title: cachedInfo.title,
+        totalRows: cachedInfo.totalRows,
         contacts: [] // Add empty contacts array for compatibility
       };
     } catch (error) {
@@ -99,9 +123,13 @@ class ExcelAsyncCacheService {
   }
 
   // Get sheet names for a file
-  async getFileSheets(fileName: string): Promise<string[]> {
+  async getFileSheets(
+    fileName: string,
+    dataSource: string = 'excel'
+  ): Promise<string[]> {
+    const KEYS = this.getRedisKeys(dataSource);
     try {
-      const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
+      const sheetsJson = await redis.get(KEYS.FILE_SHEETS(fileName));
       if (!sheetsJson) return [];
       return JSON.parse(sheetsJson) as string[];
     } catch (error) {
@@ -115,14 +143,16 @@ class ExcelAsyncCacheService {
     fileName: string,
     sheetName: string,
     page: number = 1,
-    pageSize?: number
+    pageSize?: number,
+    dataSource: string = 'excel'
   ): Promise<{ data: Contact[]; total: number; hasMore: boolean }> {
+    const KEYS = this.getRedisKeys(dataSource);
     try {
       const size = pageSize || this.pageSize;
 
       // Get cached data
       const dataJson = await redis.get(
-        REDIS_KEYS.SHEET_DATA(fileName, sheetName, page)
+        KEYS.SHEET_DATA(fileName, sheetName, page)
       );
       if (!dataJson) {
         return { data: [], total: 0, hasMore: false };
@@ -131,9 +161,7 @@ class ExcelAsyncCacheService {
       const cachedData = JSON.parse(dataJson) as Contact[];
 
       // Get total count
-      const totalStr = await redis.get(
-        REDIS_KEYS.SHEET_TOTAL(fileName, sheetName)
-      );
+      const totalStr = await redis.get(KEYS.SHEET_TOTAL(fileName, sheetName));
       const total = totalStr ? parseInt(totalStr, 10) : cachedData.length;
 
       const hasMore = page * size < total;
@@ -153,8 +181,10 @@ class ExcelAsyncCacheService {
   async searchContacts(
     query: string,
     page: number = 1,
-    pageSize: number = 50
+    pageSize: number = 50,
+    dataSource: string = 'excel'
   ): Promise<{ data: Contact[]; total: number; hasMore: boolean }> {
+    const KEYS = this.getRedisKeys(dataSource);
     try {
       const allResults: Contact[] = [];
       // Trim and lowercase the search query
@@ -169,14 +199,14 @@ class ExcelAsyncCacheService {
       const endIndex = startIndex + pageSize;
 
       // Get all files
-      const filesJson = await redis.get(REDIS_KEYS.FILES);
+      const filesJson = await redis.get(KEYS.FILES);
       if (!filesJson) return { data: [], total: 0, hasMore: false };
 
       const files = JSON.parse(filesJson) as string[];
 
       // First, collect all matching results
       for (const fileName of files) {
-        const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
+        const sheetsJson = await redis.get(KEYS.FILE_SHEETS(fileName));
         if (!sheetsJson) continue;
 
         const sheets = JSON.parse(sheetsJson) as string[];
@@ -188,7 +218,7 @@ class ExcelAsyncCacheService {
 
           while (hasMore) {
             const dataJson = await redis.get(
-              REDIS_KEYS.SHEET_DATA(fileName, sheetName, sheetPage)
+              KEYS.SHEET_DATA(fileName, sheetName, sheetPage)
             );
             if (!dataJson) {
               hasMore = false;
@@ -308,9 +338,10 @@ class ExcelAsyncCacheService {
   }
 
   // Get last update time
-  async getLastUpdate(): Promise<Date | null> {
+  async getLastUpdate(dataSource: string = 'excel'): Promise<Date | null> {
     try {
-      const lastUpdateStr = await redis.get(REDIS_KEYS.LAST_UPDATE);
+      const KEYS = this.getRedisKeys(dataSource);
+      const lastUpdateStr = await redis.get(KEYS.LAST_UPDATE);
       return lastUpdateStr ? new Date(lastUpdateStr) : null;
     } catch (error) {
       console.error('Error getting last update:', error);
@@ -329,7 +360,10 @@ class ExcelAsyncCacheService {
   }
 
   // Get task status (placeholder for now)
-  async getTaskStatus(taskId: string): Promise<any> {
+  async getTaskStatus(
+    taskId: string,
+    dataSource: string = 'excel'
+  ): Promise<any> {
     // Since we don't have worker manager anymore, return a mock status
     return {
       taskId,
@@ -342,7 +376,10 @@ class ExcelAsyncCacheService {
   }
 
   // Set folder path (placeholder for now)
-  async setFolderPath(folderPath: string): Promise<string> {
+  async setFolderPath(
+    folderPath: string,
+    dataSource: string = 'excel'
+  ): Promise<string> {
     // Return a mock task ID
     return `task_${Date.now()}`;
   }
