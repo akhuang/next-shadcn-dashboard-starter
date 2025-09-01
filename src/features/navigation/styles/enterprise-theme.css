@@ -1,0 +1,390 @@
+/* 企业级导航主题样式 */
+
+/* 企业品牌色彩 */
+:root {
+  --enterprise-primary: 220 90% 56%;
+  --enterprise-secondary: 210 40% 96%;
+  --enterprise-accent: 220 14.3% 95.9%;
+  --enterprise-success: 142 76% 36%;
+  --enterprise-warning: 38 92% 50%;
+  --enterprise-error: 0 84% 60%;
+  --enterprise-info: 199 89% 48%;
+
+  /* 企业渐变色 */
+  --gradient-primary: linear-gradient(
+    135deg,
+    hsl(220 90% 56%) 0%,
+    hsl(220 90% 66%) 100%
+  );
+  --gradient-secondary: linear-gradient(
+    135deg,
+    hsl(210 40% 96%) 0%,
+    hsl(210 40% 98%) 100%
+  );
+  --gradient-accent: linear-gradient(
+    135deg,
+    hsl(220 14.3% 95.9%) 0%,
+    hsl(220 14.3% 98%) 100%
+  );
+
+  /* 企业阴影 */
+  --enterprise-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --enterprise-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --enterprise-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --enterprise-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1),
+    0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  --enterprise-primary: 220 90% 56%;
+  --enterprise-secondary: 220 14.3% 4.1%;
+  --enterprise-accent: 220 13% 9%;
+  --enterprise-success: 142 76% 36%;
+  --enterprise-warning: 38 92% 50%;
+  --enterprise-error: 0 84% 60%;
+  --enterprise-info: 199 89% 48%;
+}
+
+/* 企业级卡片样式 */
+.enterprise-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: var(--enterprise-shadow);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.enterprise-card:hover {
+  box-shadow: var(--enterprise-shadow-lg);
+  transform: translateY(-2px);
+  border-color: hsl(var(--primary) / 0.2);
+}
+
+.enterprise-card-header {
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.enterprise-card-content {
+  padding: 24px;
+}
+
+/* 企业级按钮样式 */
+.enterprise-button-primary {
+  background: var(--gradient-primary);
+  border: 1px solid hsl(var(--primary));
+  box-shadow: var(--enterprise-shadow);
+  transition: all 0.2s ease-in-out;
+}
+
+.enterprise-button-primary:hover {
+  box-shadow: var(--enterprise-shadow-lg);
+  transform: translateY(-1px);
+}
+
+.enterprise-button-secondary {
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--enterprise-shadow-sm);
+}
+
+/* 企业级状态指示器 */
+.status-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-indicator.online::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--enterprise-success));
+  border-radius: 50%;
+  animation: pulse-green 2s infinite;
+}
+
+.status-indicator.warning::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--enterprise-warning));
+  border-radius: 50%;
+  animation: pulse-yellow 2s infinite;
+}
+
+.status-indicator.offline::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--enterprise-error));
+  border-radius: 50%;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-green {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsla(var(--enterprise-success) / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsla(var(--enterprise-success) / 0);
+  }
+}
+
+@keyframes pulse-yellow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsla(var(--enterprise-warning) / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsla(var(--enterprise-warning) / 0);
+  }
+}
+
+@keyframes pulse-red {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsla(var(--enterprise-error) / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsla(var(--enterprise-error) / 0);
+  }
+}
+
+/* 企业级动画 */
+.slide-up-enter {
+  animation: slideUpEnter 0.4s ease-out;
+}
+
+.fade-in-enter {
+  animation: fadeInEnter 0.3s ease-out;
+}
+
+.scale-in-enter {
+  animation: scaleInEnter 0.2s ease-out;
+}
+
+@keyframes slideUpEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleInEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 企业级网格布局 */
+.enterprise-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.enterprise-grid-cols-1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+.enterprise-grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.enterprise-grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.enterprise-grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.enterprise-grid-cols-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+.enterprise-grid-cols-6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+@media (max-width: 640px) {
+  .enterprise-grid-cols-2,
+  .enterprise-grid-cols-3,
+  .enterprise-grid-cols-4,
+  .enterprise-grid-cols-5,
+  .enterprise-grid-cols-6 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .enterprise-grid-cols-3,
+  .enterprise-grid-cols-4,
+  .enterprise-grid-cols-5,
+  .enterprise-grid-cols-6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .enterprise-grid-cols-4,
+  .enterprise-grid-cols-5,
+  .enterprise-grid-cols-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 企业级搜索框样式 */
+.enterprise-search {
+  position: relative;
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: var(--enterprise-shadow);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.enterprise-search:focus-within {
+  border-color: hsl(var(--primary));
+  box-shadow:
+    var(--enterprise-shadow-lg),
+    0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+.enterprise-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 16px 20px 16px 50px;
+  font-size: 16px;
+  color: hsl(var(--foreground));
+}
+
+.enterprise-search input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+/* 企业级标签样式 */
+.enterprise-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.enterprise-badge-primary {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary) / 0.2);
+}
+
+.enterprise-badge-success {
+  background: hsl(var(--enterprise-success) / 0.1);
+  color: hsl(var(--enterprise-success));
+  border: 1px solid hsl(var(--enterprise-success) / 0.2);
+}
+
+.enterprise-badge-warning {
+  background: hsl(var(--enterprise-warning) / 0.1);
+  color: hsl(var(--enterprise-warning));
+  border: 1px solid hsl(var(--enterprise-warning) / 0.2);
+}
+
+.enterprise-badge-error {
+  background: hsl(var(--enterprise-error) / 0.1);
+  color: hsl(var(--enterprise-error));
+  border: 1px solid hsl(var(--enterprise-error) / 0.2);
+}
+
+/* 企业级渐变背景 */
+.enterprise-hero-bg {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.05) 0%,
+    hsl(var(--primary) / 0.03) 50%,
+    transparent 100%
+  );
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.enterprise-glass-bg {
+  background: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* 响应式工具类 */
+.enterprise-responsive-text-sm {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.enterprise-responsive-text-base {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.enterprise-responsive-text-lg {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .enterprise-responsive-text-sm {
+    font-size: 14px;
+  }
+  .enterprise-responsive-text-base {
+    font-size: 16px;
+  }
+  .enterprise-responsive-text-lg {
+    font-size: 18px;
+  }
+}
+
+/* 企业级滚动条样式 */
+.enterprise-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.3);
+}

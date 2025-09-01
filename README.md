@@ -290,6 +290,7 @@ rm -rf certs/
 | [Docker 部署指南](docs/DOCKER_DEPLOYMENT.md) | 完整的 Docker 部署文档 |
 | [行为分析指南](docs/ANALYTICS_GUIDE.md) | Umami 集成与使用说明 |
 | [内部导航指南](docs/NAVIGATION_GUIDE.md) | 内部导航系统配置和使用 |
+| [📊 企业级导航优化](docs/NAVIGATION_ENHANCEMENT.md) | **新！** 企业级导航中心优化指南 |
 | [AD 认证设置](docs/AD_AUTH_SETUP.md) | Active Directory 认证集成 |
 | [环境变量示例](env.example.txt) | 环境变量配置模板 |
 
