@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useDataTable } from '@/hooks/use-data-table';
 import { createContactColumns } from '../contact-table-columns';
 
@@ -63,12 +63,6 @@ const mockContacts = [
     searchableText: '王五 wangwu@example.com 13700137000'
   }
 ];
-
-const mockExcelData = {
-  contacts: mockContacts,
-  lastUpdated: new Date(),
-  files: ['customers.xlsx']
-};
 
 describe('ContactWorkspace Table Data Integration', () => {
   it('should create table with contact data correctly', () => {

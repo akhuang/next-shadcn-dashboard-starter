@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { excelService } from '@/lib/excel-service';
 
 // OPTIONS 请求处理（CORS）
-export async function OPTIONS(_request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {

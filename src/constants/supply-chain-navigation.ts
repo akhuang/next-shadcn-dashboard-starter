@@ -15,20 +15,12 @@ import {
   Lock,
   Bookmark,
   Activity,
-  Layers,
   Bug,
   Search,
-  Bell,
   Clipboard,
   Workflow,
   Archive,
-  Image,
-  Video,
-  Download,
-  Star,
-  ExternalLink,
-  Clock,
-  Trash2
+  Star
 } from 'lucide-react';
 
 export interface NavigationLink {

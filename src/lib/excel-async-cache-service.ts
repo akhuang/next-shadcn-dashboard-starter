@@ -1,5 +1,5 @@
 import redis, { REDIS_KEYS } from './redis';
-import { Contact, ExcelData, SheetInfo, MergeRange } from '@/types/excel';
+import { Contact, SheetInfo, MergeRange } from '@/types/excel';
 
 interface CachedSheetInfo {
   name: string;
@@ -364,6 +364,7 @@ class ExcelAsyncCacheService {
     taskId: string,
     dataSource: string = 'excel'
   ): Promise<any> {
+    void dataSource;
     // Since we don't have worker manager anymore, return a mock status
     return {
       taskId,
@@ -380,6 +381,8 @@ class ExcelAsyncCacheService {
     folderPath: string,
     dataSource: string = 'excel'
   ): Promise<string> {
+    void folderPath;
+    void dataSource;
     // Return a mock task ID
     return `task_${Date.now()}`;
   }

@@ -1,9 +1,7 @@
 import redis, { CACHE_TTL } from './redis';
 import type {
-  NavigationItem,
   NavigationCategory,
-  UserNavigationData,
-  NavigationVisit
+  UserNavigationData
 } from '@/types/navigation';
 
 const CACHE_KEYS = {

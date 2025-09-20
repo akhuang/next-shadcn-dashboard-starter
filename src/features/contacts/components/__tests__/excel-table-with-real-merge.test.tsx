@@ -71,7 +71,6 @@ describe('ExcelTable - 真实合并单元格显示', () => {
     expect(c3Cell).toHaveAttribute('colSpan', '2');
 
     // A2单元格应该不存在（被合并了）
-    const a2Cells = screen.queryAllByText('A2');
     // A2的数据可能被复制到合并单元格中，所以检查独立的td
     const allCells = screen.getAllByRole('cell');
     const a2IndependentCell = allCells.find(

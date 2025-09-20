@@ -159,7 +159,7 @@ export default function ContactSearchOverlay({
                             // 查找包含搜索词的字段
                             const matchedField = Object.entries(
                               contact.rowData
-                            ).find(([_, value]) =>
+                            ).find(([, value]) =>
                               value
                                 ?.toString()
                                 .toLowerCase()

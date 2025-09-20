@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
-import { MergeRange, ExcelData } from '@/types/excel';
+import { MergeRange } from '@/types/excel';
 import ExcelTable from '@/features/contacts/components/excel-table';
 import ContactSearchResults from '@/features/contacts/components/contact-search-results';
 
@@ -106,50 +106,10 @@ const getFileConfig = (fileName: string, dataSource: string) => {
   };
 };
 
-// 格式化同步时间
-const formatSyncTime = (date: Date | null) => {
-  if (!date) return { time: '', relative: '' };
-
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-
-  // 始终显示完整时间（年月日 时分秒）
-  const time = date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-
-  // 相对时间
-  let relative = '';
-  if (seconds < 10) relative = '刚更新';
-  else if (seconds < 60) relative = `${seconds}秒前`;
-  else if (minutes < 60) relative = `${minutes}分钟前`;
-  else if (hours < 24) relative = `${hours}小时前`;
-  else {
-    // 如果超过24小时，显示天数
-    const days = Math.floor(hours / 24);
-    relative = `${days}天前`;
-  }
-
-  return { time, relative };
-};
-
 export default function ExcelWorkspace({
   dataSource,
   title
 }: ExcelWorkspaceProps) {
-  const [data, setData] = useState<ExcelData>({
-    contacts: [],
-    lastUpdated: new Date(),
-    files: []
-  });
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>('');
@@ -337,10 +297,6 @@ export default function ExcelWorkspace({
         // 服务器应该返回数据的最后更新时间
         if (result.data.lastUpdate) {
           const updateTime = new Date(result.data.lastUpdate);
-          setData((prev) => ({
-            ...prev,
-            lastUpdated: updateTime
-          }));
           setLastSyncTime(updateTime);
         } else {
           // 如果服务器没有返回更新时间，说明API有问题
@@ -820,7 +776,6 @@ export default function ExcelWorkspace({
                                       )
                                     : sheet.columns
                                 }
-                                onExport={exportToCSV}
                                 mergeRanges={sheet.mergeRanges || []}
                                 enableAutoMerge={false}
                               />

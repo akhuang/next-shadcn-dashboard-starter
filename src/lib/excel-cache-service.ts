@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import chokidar from 'chokidar';
 import redis, { REDIS_KEYS, CACHE_TTL } from './redis';
-import { Contact, ExcelData, SheetInfo, MergeRange } from '@/types/excel';
+import { Contact, MergeRange } from '@/types/excel';
 
 interface CachedSheetInfo {
   name: string;
@@ -103,7 +103,7 @@ class ExcelCacheService {
         const stat = fs.statSync(file);
         const fileName = path.basename(file);
         const sheets = await this.getFileSheets(fileName);
-        
+
         fileInfoList.push({
           fileName,
           displayName: fileName.replace(/\.(xlsx|xls|xlsm)$/i, ''),
@@ -170,11 +170,11 @@ class ExcelCacheService {
     for (const sheetName of workbook.SheetNames) {
       sheetNames.push(sheetName);
       const worksheet = workbook.Sheets[sheetName];
-      
+
       // 获取范围和合并单元格
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
       const merges = worksheet['!merges'] || [];
-      
+
       // 检测标题
       let sheetTitle: string | undefined = undefined;
       const firstRowMerges = merges.filter(
@@ -224,9 +224,9 @@ class ExcelCacheService {
       const colLetters = Array.from({ length: totalCols }, (_, i) =>
         XLSX.utils.encode_col(range.s.c + i)
       );
-      const useLettersAsHeaders = headerRowHasMerge || rawHeaders.filter(
-        (h) => String(h ?? '').trim() !== ''
-      ).length <= 1;
+      const useLettersAsHeaders =
+        headerRowHasMerge ||
+        rawHeaders.filter((h) => String(h ?? '').trim() !== '').length <= 1;
       const headers = useLettersAsHeaders
         ? colLetters
         : rawHeaders.map((h, i) =>
@@ -241,7 +241,7 @@ class ExcelCacheService {
         title: sheetTitle,
         totalRows: processedData.length - (useLettersAsHeaders ? 0 : 1)
       };
-      
+
       await redis.set(
         REDIS_KEYS.SHEET_INFO(fileName, sheetName),
         JSON.stringify(sheetInfo),
@@ -257,11 +257,8 @@ class ExcelCacheService {
 
       for (let page = 1; page <= totalPages; page++) {
         const startIdx = dataStartIndex + (page - 1) * this.pageSize;
-        const endIdx = Math.min(
-          startIdx + this.pageSize,
-          processedData.length
-        );
-        
+        const endIdx = Math.min(startIdx + this.pageSize, processedData.length);
+
         const pageData: Contact[] = [];
         for (let i = startIdx; i < endIdx; i++) {
           const row = processedData[i] || [];
@@ -360,7 +357,9 @@ class ExcelCacheService {
     fileName: string,
     sheetName: string
   ): Promise<CachedSheetInfo | null> {
-    const infoJson = await redis.get(REDIS_KEYS.SHEET_INFO(fileName, sheetName));
+    const infoJson = await redis.get(
+      REDIS_KEYS.SHEET_INFO(fileName, sheetName)
+    );
     if (infoJson) {
       return JSON.parse(infoJson);
     }
@@ -372,24 +371,35 @@ class ExcelCacheService {
     sheetName: string,
     page: number = 1,
     pageSize?: number
-  ): Promise<{ data: Contact[]; total: number; page: number; pageSize: number }> {
+  ): Promise<{
+    data: Contact[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
     const effectivePageSize = pageSize || this.pageSize;
-    
+
     // 获取总行数
-    const totalStr = await redis.get(REDIS_KEYS.SHEET_TOTAL(fileName, sheetName));
+    const totalStr = await redis.get(
+      REDIS_KEYS.SHEET_TOTAL(fileName, sheetName)
+    );
     const total = totalStr ? parseInt(totalStr) : 0;
-    
+
     // 如果请求的pageSize与默认不同，需要重新计算数据
     if (effectivePageSize !== this.pageSize) {
       // 需要从多个缓存页中组合数据
       const startRow = (page - 1) * effectivePageSize;
       const endRow = Math.min(startRow + effectivePageSize, total);
-      
+
       const data: Contact[] = [];
       const startCachePage = Math.floor(startRow / this.pageSize) + 1;
       const endCachePage = Math.ceil(endRow / this.pageSize);
-      
-      for (let cachePage = startCachePage; cachePage <= endCachePage; cachePage++) {
+
+      for (
+        let cachePage = startCachePage;
+        cachePage <= endCachePage;
+        cachePage++
+      ) {
         const cacheDataJson = await redis.get(
           REDIS_KEYS.SHEET_DATA(fileName, sheetName, cachePage)
         );
@@ -398,12 +408,12 @@ class ExcelCacheService {
           data.push(...cacheData);
         }
       }
-      
+
       // 截取所需数据
       const relativeStart = startRow % this.pageSize;
       const relativeEnd = relativeStart + effectivePageSize;
       const resultData = data.slice(relativeStart, relativeEnd);
-      
+
       return {
         data: resultData,
         total,
@@ -411,13 +421,13 @@ class ExcelCacheService {
         pageSize: effectivePageSize
       };
     }
-    
+
     // 使用默认pageSize，直接从缓存获取
     const dataJson = await redis.get(
       REDIS_KEYS.SHEET_DATA(fileName, sheetName, page)
     );
     const data = dataJson ? JSON.parse(dataJson) : [];
-    
+
     return {
       data,
       total,
@@ -430,7 +440,12 @@ class ExcelCacheService {
     query: string,
     page: number = 1,
     pageSize: number = 50
-  ): Promise<{ data: Contact[]; total: number; page: number; pageSize: number }> {
+  ): Promise<{
+    data: Contact[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
     if (!query) {
       return { data: [], total: 0, page, pageSize };
     }

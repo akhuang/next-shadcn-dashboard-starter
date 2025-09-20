@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface PowerBIDashboardProps {
   embedUrl: string;
@@ -18,8 +17,6 @@ export function PowerBIDashboard({
   height = 600,
   onError
 }: PowerBIDashboardProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     // 如果使用 Power BI JavaScript SDK
     // 需要先安装: npm install powerbi-client

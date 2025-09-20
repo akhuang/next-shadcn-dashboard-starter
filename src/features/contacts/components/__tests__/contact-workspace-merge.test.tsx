@@ -63,7 +63,7 @@ describe('ContactWorkspace - 合并单元格集成测试', () => {
       json: async () => mockData
     });
 
-    const { container } = render(<ContactWorkspace />);
+    render(<ContactWorkspace />);
 
     // 等待数据加载
     await waitFor(

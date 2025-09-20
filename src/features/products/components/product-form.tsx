@@ -75,6 +75,7 @@ export default function ProductForm({
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    void values;
     // Form submission logic would be implemented here
   }
 

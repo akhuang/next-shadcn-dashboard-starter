@@ -63,7 +63,8 @@ export class MockAuth {
     }
 
     // Return user data without password
-    const { password: _, ...userData } = user;
+    const { password: removedPassword, ...userData } = user;
+    void removedPassword;
     return userData;
   }
 

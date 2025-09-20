@@ -56,7 +56,6 @@ export default function ContactTable() {
     '/Users/huangf/Documents/Contacts'
   );
   const [isConnected, setIsConnected] = useState(false);
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
 
   // 初始化文件夹路径
   const initializeFolder = async () => {
@@ -103,8 +102,6 @@ export default function ContactTable() {
     es.onerror = () => {
       setIsConnected(false);
     };
-
-    setEventSource(es);
 
     return () => {
       es.close();

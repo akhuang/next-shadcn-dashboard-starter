@@ -118,7 +118,7 @@ describe('ContactWorkspace - 异步功能测试', () => {
       });
 
       // 设置文件夹路径
-      const pathInput = screen.getByDisplayValue('/tmp/test-contacts');
+      screen.getByDisplayValue('/tmp/test-contacts');
       const confirmButton = screen.getByRole('button', { name: '' }); // 文件夹图标按钮
 
       await act(async () => {

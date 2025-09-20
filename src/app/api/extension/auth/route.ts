@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // 内部系统，直接生成 token，无需验证
     const token = await generateToken('internal');
@@ -50,7 +50,7 @@ async function generateToken(source: string): Promise<string> {
 }
 
 // OPTIONS 请求处理（CORS）
-export async function OPTIONS(_request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {

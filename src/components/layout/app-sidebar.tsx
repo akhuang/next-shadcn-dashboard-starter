@@ -121,8 +121,9 @@ export default function AppSidebar() {
   const { state } = useSidebar();
   const [user, setUser] = useState<UserSession | null>(null);
   const router = useRouter();
-  const handleSwitchTenant = (_tenantId: string) => {
+  const handleSwitchTenant = (tenantId: string) => {
     // Tenant switching functionality would be implemented here
+    void tenantId;
   };
 
   const activeTenant = tenants[0];

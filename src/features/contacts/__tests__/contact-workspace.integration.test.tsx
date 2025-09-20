@@ -222,7 +222,6 @@ describe('ContactWorkspace Integration Tests', () => {
     });
 
     // 验证只为file2调用了API，没有重新加载所有文件
-    const callsAfterSwitch = mockFetch.mock.calls.length;
     const newCalls = mockFetch.mock.calls.slice(callsBeforeSwitch);
 
     // 应该只有2个新调用：getSheetInfo 和 getSheetData

@@ -36,7 +36,7 @@ export const navItems: NavItem[] = [
     icon: 'dashboard',
     shortcut: ['e', 'e'],
     isActive: false,
-    items: dashboardConfig.dashboards.map((dashboard, _index) => ({
+    items: dashboardConfig.dashboards.map((dashboard) => ({
       title: dashboard.title,
       url: `/dashboard/embedded/${dashboard.id}`,
       icon: 'dashboard',

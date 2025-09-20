@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
-import * as path from 'path';
 import { excelService } from '../excel-service';
 
 // Mock modules
@@ -91,13 +90,13 @@ describe('ExcelService', () => {
 
       vi.spyOn(fs, 'existsSync').mockReturnValue(true);
       vi.spyOn(fs, 'readdirSync').mockReturnValue(mockFiles as any);
-      vi.spyOn(fs, 'statSync').mockImplementation(
-        (filePath) =>
-          ({
-            isDirectory: () => false,
-            isFile: () => true
-          }) as any
-      );
+      vi.spyOn(fs, 'statSync').mockImplementation((filePath) => {
+        void filePath;
+        return {
+          isDirectory: () => false,
+          isFile: () => true
+        } as any;
+      });
       vi.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from(''));
 
       excelService.setFolderPath(mockPath);

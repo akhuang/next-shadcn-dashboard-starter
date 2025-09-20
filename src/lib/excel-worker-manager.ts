@@ -2,7 +2,7 @@ import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as fs from 'fs';
-import redis, { REDIS_KEYS, CACHE_TTL } from './redis';
+import redis, { CACHE_TTL } from './redis';
 
 export interface TaskStatus {
   taskId: string;

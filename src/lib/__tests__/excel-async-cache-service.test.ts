@@ -493,6 +493,7 @@ describe('ExcelAsyncCacheService', () => {
     it('应该处理嵌套目录', async () => {
       let callCount = 0;
       mockFs.readdirSync.mockImplementation((dir: string) => {
+        void dir;
         callCount++;
         if (callCount === 1) {
           return ['subdir', 'file1.xlsx'];

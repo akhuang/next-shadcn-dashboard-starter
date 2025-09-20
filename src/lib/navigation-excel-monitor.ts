@@ -2,14 +2,13 @@ import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
 import redis, { CACHE_TTL } from './redis';
-import { excelWorkerManager, ExcelWorkerManager } from './excel-worker-manager';
 import { EventEmitter } from 'events';
+import { createHash } from 'crypto';
 import type {
   NavigationItem,
   NavigationCategory,
   ExcelNavigationRow,
-  UserNavigationData,
-  NavigationVisit
+  UserNavigationData
 } from '@/types/navigation';
 
 const NAVIGATION_EXCEL_PATH =
@@ -86,14 +85,14 @@ class NavigationExcelMonitor extends EventEmitter {
         CACHE_KEYS.NAVIGATION_DATA,
         JSON.stringify(navigationData),
         'EX',
-        CACHE_TTL.DEFAULT
+        CACHE_TTL.NAVIGATION
       );
 
       await redis.set(
         CACHE_KEYS.LAST_UPDATE,
         new Date().toISOString(),
         'EX',
-        CACHE_TTL.DEFAULT
+        CACHE_TTL.NAVIGATION
       );
 
       const fileStats = fs.statSync(NAVIGATION_EXCEL_PATH);
@@ -105,7 +104,7 @@ class NavigationExcelMonitor extends EventEmitter {
           cached: true
         }),
         'EX',
-        CACHE_TTL.DEFAULT
+        CACHE_TTL.NAVIGATION
       );
 
       this.emit('update:complete', navigationData);
@@ -119,33 +118,54 @@ class NavigationExcelMonitor extends EventEmitter {
   }
 
   private transformExcelData(rows: ExcelNavigationRow[]): NavigationCategory[] {
-    const categoryMap = new Map<string, NavigationItem[]>();
+    const categoryMap = new Map<string, Map<string, NavigationItem>>();
 
-    rows.forEach((row, index) => {
+    rows.forEach((row) => {
+      const category = (row.类别 || '未分类').trim();
+      const itemId = this.generateStableId(row);
       const item: NavigationItem = {
-        id: `nav-${index}-${Date.now()}`,
-        category: row.类别 || '未分类',
-        name: row.名字 || '',
-        url: row.链接 || '',
-        description: row.说明 || '',
+        id: itemId,
+        category,
+        name: row.名字?.trim() || '',
+        url: row.链接?.trim() || '',
+        description: row.说明?.trim() || '',
         isExternal: row.链接?.startsWith('http')
       };
 
-      if (!categoryMap.has(item.category)) {
-        categoryMap.set(item.category, []);
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, new Map());
       }
-      categoryMap.get(item.category)!.push(item);
+
+      const itemsMap = categoryMap.get(category)!;
+      itemsMap.set(itemId, item);
     });
 
-    const categories: NavigationCategory[] = Array.from(
-      categoryMap.entries()
-    ).map(([name, items]) => ({
-      id: name.toLowerCase().replace(/\s+/g, '-'),
+    return Array.from(categoryMap.entries()).map(([name, itemsMap]) => ({
+      id: this.createCategorySlug(name),
       name,
-      items
+      items: Array.from(itemsMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name, 'zh-CN')
+      )
     }));
+  }
 
-    return categories;
+  private generateStableId(row: ExcelNavigationRow): string {
+    const source = `${(row.类别 || '').trim().toLowerCase()}|${(row.名字 || '')
+      .trim()
+      .toLowerCase()}|${(row.链接 || '').trim().toLowerCase()}`;
+
+    const hash = createHash('md5').update(source).digest('hex');
+    return `nav-${hash}`;
+  }
+
+  private createCategorySlug(name: string): string {
+    const normalized = name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\-\u4e00-\u9fa5]/g, '-');
+
+    return normalized || 'category';
   }
 
   private async createSampleData() {

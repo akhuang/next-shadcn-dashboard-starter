@@ -23,7 +23,7 @@ interface Contact {
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [contactsData, _setContactsData] = useState<Contact[]>([]);
+  const [contactsData] = useState<Contact[]>([]);
   const [isContactsPage, setIsContactsPage] = useState(false);
 
   // 仅检测是否在联系人页面；不再拉取旧接口，避免重复/错误请求

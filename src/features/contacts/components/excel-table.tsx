@@ -2,15 +2,12 @@
 
 import React, { useCallback, useMemo } from 'react';
 import '@/styles/excel-table.css';
-import { Button } from '@/components/ui/button';
-import { Download, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Contact, MergeRange } from '@/types/excel';
 
 interface ExcelTableProps {
   contacts: Contact[];
   columns: string[];
-  onExport?: () => void;
   mergeRanges?: MergeRange[];
   enableAutoMerge?: boolean;
 }
@@ -18,7 +15,6 @@ interface ExcelTableProps {
 export default function ExcelTable({
   contacts,
   columns,
-  onExport,
   mergeRanges = [],
   enableAutoMerge = false
 }: ExcelTableProps) {
@@ -127,25 +123,6 @@ export default function ExcelTable({
     },
     [allMergeRanges]
   );
-
-  const handleCopy = useCallback(() => {
-    // 简化复制功能 - 复制当前数据
-    if (contacts.length === 0) return;
-
-    try {
-      const headers = columns.join('\t');
-      const rows = contacts
-        .map((contact) =>
-          columns.map((col) => contact.rowData[col] || '').join('\t')
-        )
-        .join('\n');
-
-      const textToCopy = headers + '\n' + rows;
-      navigator.clipboard.writeText(textToCopy);
-    } catch (error) {
-      // ignore copy error
-    }
-  }, [contacts, columns]);
 
   return (
     <div className='flex h-full w-full flex-col overflow-hidden bg-white'>

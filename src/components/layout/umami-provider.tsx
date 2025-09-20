@@ -8,7 +8,7 @@ import type { UserSession } from '@/lib/auth/verify';
 export function UmamiProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<UserSession | null>(null);
+  const [, setUser] = useState<UserSession | null>(null);
 
   // Initialize Umami on mount
   useEffect(() => {
