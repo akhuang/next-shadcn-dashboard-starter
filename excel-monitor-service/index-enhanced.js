@@ -424,6 +424,8 @@ async function processContactFile(fileInfo, config) {
     cellDates: true
   });
 
+  await clearContactFileCache(config.redisPrefix, fileName);
+
   const sheetNames = [];
 
   // Process each sheet (existing contact processing logic)
@@ -617,6 +619,32 @@ async function updateFilesList(action, fileName, redisPrefix = 'excel') {
   }
 }
 
+async function clearContactFileCache(redisPrefix, fileName) {
+  const KEYS =
+    redisPrefix === 'excel'
+      ? CONTACT_REDIS_KEYS
+      : getReportRedisKeys(redisPrefix);
+
+  const sheetsJson = await redis.get(KEYS.FILE_SHEETS(fileName));
+  if (sheetsJson) {
+    const sheets = JSON.parse(sheetsJson);
+
+    for (const sheetName of sheets) {
+      await redis.del(KEYS.SHEET_INFO(fileName, sheetName));
+      await redis.del(KEYS.SHEET_TOTAL(fileName, sheetName));
+
+      const pattern = `${redisPrefix}:sheet:${fileName}:${sheetName}:data:*`;
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    }
+  }
+
+  await redis.del(KEYS.FILE_SHEETS(fileName));
+  await redis.del(KEYS.FILE_STATUS(fileName));
+}
+
 // Remove file from cache
 async function removeFileFromCache(type, fileName, config) {
   try {
@@ -633,34 +661,7 @@ async function removeFileFromCache(type, fileName, config) {
       console.log(`[${type}] Navigation cache cleared`);
       return;
     }
-    // \u6839\u636e\u914d\u7f6e\u9009\u62e9\u6b63\u786e\u7684 Redis \u952e\u96c6\u5408
-    const KEYS =
-      config.redisPrefix === 'excel'
-        ? CONTACT_REDIS_KEYS
-        : getReportRedisKeys(config.redisPrefix);
-
-    // Get sheet names
-    const sheetsJson = await redis.get(KEYS.FILE_SHEETS(fileName));
-    if (sheetsJson) {
-      const sheets = JSON.parse(sheetsJson);
-
-      // Delete all sheet data
-      for (const sheetName of sheets) {
-        await redis.del(KEYS.SHEET_INFO(fileName, sheetName));
-        await redis.del(KEYS.SHEET_TOTAL(fileName, sheetName));
-
-        // Delete all pages
-        const pattern = `${config.redisPrefix}:sheet:${fileName}:${sheetName}:data:*`;
-        const keys = await redis.keys(pattern);
-        if (keys.length > 0) {
-          await redis.del(...keys);
-        }
-      }
-
-      // Delete file metadata
-      await redis.del(KEYS.FILE_SHEETS(fileName));
-      await redis.del(KEYS.FILE_STATUS(fileName));
-    }
+    await clearContactFileCache(config.redisPrefix, fileName);
 
     // 更新文件列表
     await updateFilesList('remove', fileName, config.redisPrefix);

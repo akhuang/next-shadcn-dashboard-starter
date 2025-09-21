@@ -36,10 +36,7 @@ const REDIS_KEYS = {
   FILE_STATUS: (fileName) => `excel:file:${fileName}:cache_status`
 };
 
-const CACHE_TTL = {
-  DEFAULT: 3600,
-  SHEET_DATA: 1800
-};
+const STATUS_TTL = 60;
 
 // Configuration
 const WATCH_DIR = process.env.EXCEL_WATCH_DIR || '/tmp/test-contacts';
@@ -109,12 +106,7 @@ async function scanDirectory() {
     console.log(`Found ${excelFiles.length} Excel files`);
 
     // Store file list in Redis
-    await redis.set(
-      REDIS_KEYS.FILES,
-      JSON.stringify(excelFiles),
-      'EX',
-      CACHE_TTL.DEFAULT
-    );
+    await redis.set(REDIS_KEYS.FILES, JSON.stringify(excelFiles));
 
     // Process each file
     for (const file of excelFiles) {
@@ -249,6 +241,8 @@ async function processExcelFile(fileInfo) {
     cellDates: true
   });
 
+  await clearFileCache(fileName);
+
   const sheetNames = [];
 
   // Process each sheet
@@ -324,9 +318,7 @@ async function processExcelFile(fileInfo) {
 
     await redis.set(
       REDIS_KEYS.SHEET_INFO(fileName, sheetName),
-      JSON.stringify(sheetInfo),
-      'EX',
-      CACHE_TTL.DEFAULT
+      JSON.stringify(sheetInfo)
     );
 
     // Paginate and store data
@@ -365,18 +357,14 @@ async function processExcelFile(fileInfo) {
       // Store page data
       await redis.set(
         REDIS_KEYS.SHEET_DATA(fileName, sheetName, page),
-        JSON.stringify(pageData),
-        'EX',
-        CACHE_TTL.SHEET_DATA
+        JSON.stringify(pageData)
       );
     }
 
     // Store total rows
     await redis.set(
       REDIS_KEYS.SHEET_TOTAL(fileName, sheetName),
-      processedData.length - dataStartIndex,
-      'EX',
-      CACHE_TTL.DEFAULT
+      processedData.length - dataStartIndex
     );
 
     console.log(
@@ -385,12 +373,7 @@ async function processExcelFile(fileInfo) {
   }
 
   // Store file sheets
-  await redis.set(
-    REDIS_KEYS.FILE_SHEETS(fileName),
-    JSON.stringify(sheetNames),
-    'EX',
-    CACHE_TTL.DEFAULT
-  );
+  await redis.set(REDIS_KEYS.FILE_SHEETS(fileName), JSON.stringify(sheetNames));
 
   // Store file status
   await redis.set(
@@ -400,9 +383,7 @@ async function processExcelFile(fileInfo) {
       lastModified: modifiedTime,
       size: size,
       sheets: sheetNames
-    }),
-    'EX',
-    CACHE_TTL.DEFAULT
+    })
   );
 
   console.log(`Completed processing: ${fileName}`);
@@ -445,12 +426,7 @@ async function updateFilesList() {
     console.log(`Updating file list: ${excelFiles.length} files found`);
 
     // Store updated file list in Redis
-    await redis.set(
-      REDIS_KEYS.FILES,
-      JSON.stringify(excelFiles),
-      'EX',
-      CACHE_TTL.DEFAULT
-    );
+    await redis.set(REDIS_KEYS.FILES, JSON.stringify(excelFiles));
 
     return excelFiles;
   } catch (error) {
@@ -459,32 +435,39 @@ async function updateFilesList() {
   }
 }
 
+async function deleteFileCacheEntries(fileName) {
+  const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
+  if (sheetsJson) {
+    const sheets = JSON.parse(sheetsJson);
+
+    for (const sheetName of sheets) {
+      await redis.del(REDIS_KEYS.SHEET_INFO(fileName, sheetName));
+      await redis.del(REDIS_KEYS.SHEET_TOTAL(fileName, sheetName));
+
+      const pattern = `excel:sheet:${fileName}:${sheetName}:data:*`;
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    }
+  }
+
+  await redis.del(REDIS_KEYS.FILE_SHEETS(fileName));
+  await redis.del(REDIS_KEYS.FILE_STATUS(fileName));
+}
+
+async function clearFileCache(fileName) {
+  try {
+    await deleteFileCacheEntries(fileName);
+  } catch (error) {
+    console.error(`Error clearing cache for ${fileName}:`, error.message);
+  }
+}
+
 // Remove file from cache
 async function removeFileFromCache(fileName) {
   try {
-    // Get sheet names
-    const sheetsJson = await redis.get(REDIS_KEYS.FILE_SHEETS(fileName));
-    if (sheetsJson) {
-      const sheets = JSON.parse(sheetsJson);
-
-      // Delete all sheet data
-      for (const sheetName of sheets) {
-        // Delete sheet info
-        await redis.del(REDIS_KEYS.SHEET_INFO(fileName, sheetName));
-        await redis.del(REDIS_KEYS.SHEET_TOTAL(fileName, sheetName));
-
-        // Delete all pages (scan for keys)
-        const pattern = `excel:sheet:${fileName}:${sheetName}:data:*`;
-        const keys = await redis.keys(pattern);
-        if (keys.length > 0) {
-          await redis.del(...keys);
-        }
-      }
-
-      // Delete file metadata
-      await redis.del(REDIS_KEYS.FILE_SHEETS(fileName));
-      await redis.del(REDIS_KEYS.FILE_STATUS(fileName));
-    }
+    await deleteFileCacheEntries(fileName);
 
     // Update file list
     await updateFilesList();
@@ -507,7 +490,7 @@ async function updateServiceStatus() {
         timestamp: new Date().toISOString()
       }),
       'EX',
-      60 // Short TTL for status
+      STATUS_TTL // Short TTL for status monitoring
     );
   } catch (error) {
     console.error('Error updating service status:', error.message);
