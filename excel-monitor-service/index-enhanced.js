@@ -88,9 +88,102 @@ const CACHE_TTL = {
 const PAGE_SIZE = 100;
 const SUPPORTED_EXTENSIONS = ['.xlsx', '.xls', '.xlsm', '.xlsb'];
 
+const RETRYABLE_ERROR_CODES = new Set(['EBUSY', 'ENOENT', 'EPERM', 'EACCES']);
+const MAX_RETRY_ATTEMPTS = Math.max(
+  parseInt(process.env.EXCEL_MONITOR_MAX_RETRIES || '5', 10),
+  1
+);
+const RETRY_BASE_DELAY_MS = Math.max(
+  parseInt(process.env.EXCEL_MONITOR_RETRY_DELAY || '1000', 10),
+  100
+);
+const RETRY_MAX_DELAY_MS = Math.max(
+  parseInt(process.env.EXCEL_MONITOR_MAX_RETRY_DELAY || '10000', 10),
+  RETRY_BASE_DELAY_MS
+);
+
+const pendingRetries = new Map();
+
+function getRetryKey(type, fileName) {
+  return `${type}:${fileName}`;
+}
+
+function cancelScheduledRetry(type, fileName) {
+  const key = getRetryKey(type, fileName);
+  const pending = pendingRetries.get(key);
+  if (pending) {
+    clearTimeout(pending.timeout);
+    pendingRetries.delete(key);
+  }
+}
+
+function isTransientFsError(error) {
+  if (!error) return false;
+  if (error.code && RETRYABLE_ERROR_CODES.has(error.code)) return true;
+
+  const message = (error.message || '').toLowerCase();
+  return (
+    message.includes('busy') ||
+    message.includes('resource temporarily unavailable') ||
+    message.includes('no such file')
+  );
+}
+
+function getRetryDelayMs(attempt) {
+  const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+  return Math.min(delay, RETRY_MAX_DELAY_MS);
+}
+
+function scheduleRetry(type, fileName, config, attempt, reason) {
+  if (attempt > MAX_RETRY_ATTEMPTS) {
+    console.error(
+      `[${type}] Giving up on ${fileName} after ${MAX_RETRY_ATTEMPTS} retries (${reason})`
+    );
+    serviceStatus.errors.push({
+      time: new Date(),
+      type,
+      file: fileName,
+      error: `Max retries exceeded: ${reason}`
+    });
+    cancelScheduledRetry(type, fileName);
+    return;
+  }
+
+  const key = getRetryKey(type, fileName);
+  const delay = getRetryDelayMs(attempt);
+  const existing = pendingRetries.get(key);
+  if (existing) {
+    clearTimeout(existing.timeout);
+  }
+
+  console.warn(
+    `[${type}] Scheduling retry ${attempt}/${MAX_RETRY_ATTEMPTS} for ${fileName} in ${delay}ms (${reason})`
+  );
+
+  const timeout = setTimeout(() => {
+    pendingRetries.delete(key);
+    addToQueue(type, fileName, config, attempt)
+      .then((added) => {
+        if (added) {
+          return processQueue(type, config);
+        }
+        return null;
+      })
+      .catch((err) => {
+        console.error(
+          `[${type}] Retry attempt ${attempt} for ${fileName} failed:`,
+          err.message
+        );
+      });
+  }, delay);
+
+  pendingRetries.set(key, { attempt, timeout });
+}
+
 // Processing queues per monitor type
 const processingQueues = new Map();
 const isProcessing = new Map();
+const pendingProcess = new Map();
 
 // Service status
 let serviceStatus = {
@@ -130,6 +223,7 @@ async function initService() {
     // Initialize processing queue
     processingQueues.set(type, new Map());
     isProcessing.set(type, false);
+    pendingProcess.set(type, false);
 
     // Initialize status
     serviceStatus.monitors[type] = {
@@ -246,24 +340,43 @@ function setupWatcher(type, config) {
 }
 
 // Add file to processing queue
-async function addToQueue(type, fileName, config) {
+async function addToQueue(type, fileName, config, retryCount = 0) {
   const filePath = path.join(config.watchDir, fileName);
   const queue = processingQueues.get(type);
 
   try {
     const stats = fs.statSync(filePath);
+    cancelScheduledRetry(type, fileName);
     queue.set(fileName, {
       fileName,
       filePath,
       modifiedTime: stats.mtime,
-      size: stats.size
+      size: stats.size,
+      retryCount
     });
+    if (isProcessing.get(type)) {
+      pendingProcess.set(type, true);
+    }
     console.log(`[${type}] Added to queue: ${fileName}`);
+    return true;
   } catch (error) {
-    console.error(
-      `[${type}] Error adding ${fileName} to queue:`,
-      error.message
-    );
+    const errorCode = error?.code || 'UNKNOWN';
+    if (isTransientFsError(error) && retryCount < MAX_RETRY_ATTEMPTS) {
+      const nextAttempt = retryCount + 1;
+      scheduleRetry(type, fileName, config, nextAttempt, `stat ${errorCode}`);
+    } else {
+      console.error(
+        `[${type}] Error adding ${fileName} to queue:`,
+        error.message
+      );
+      serviceStatus.errors.push({
+        time: new Date(),
+        type,
+        file: fileName,
+        error: error.message
+      });
+    }
+    return false;
   }
 }
 
@@ -292,14 +405,30 @@ async function processQueue(type, config) {
       serviceStatus.monitors[type].filesProcessed++;
       queue.delete(fileName);
     } catch (error) {
-      console.error(`[${type}] Error processing ${fileName}:`, error.message);
-      serviceStatus.errors.push({
-        time: new Date(),
-        type,
-        file: fileName,
-        error: error.message
-      });
       queue.delete(fileName);
+      const currentRetry = fileInfo.retryCount || 0;
+
+      if (isTransientFsError(error) && currentRetry < MAX_RETRY_ATTEMPTS) {
+        console.warn(
+          `[${type}] Error processing ${fileName}: ${error.message}. Retrying...`
+        );
+        const nextAttempt = currentRetry + 1;
+        scheduleRetry(
+          type,
+          fileName,
+          config,
+          nextAttempt,
+          `process ${error.code || error.message}`
+        );
+      } else {
+        console.error(`[${type}] Error processing ${fileName}:`, error.message);
+        serviceStatus.errors.push({
+          time: new Date(),
+          type,
+          file: fileName,
+          error: error.message
+        });
+      }
     }
   }
 
@@ -307,6 +436,13 @@ async function processQueue(type, config) {
   serviceStatus.monitors[type].status = 'idle';
   serviceStatus.lastUpdate = new Date();
   isProcessing.set(type, false);
+
+  const shouldContinue = queue.size > 0 || pendingProcess.get(type);
+  pendingProcess.set(type, false);
+
+  if (shouldContinue) {
+    await processQueue(type, config);
+  }
 }
 
 // Process navigation Excel file
@@ -648,6 +784,12 @@ async function clearContactFileCache(redisPrefix, fileName) {
 // Remove file from cache
 async function removeFileFromCache(type, fileName, config) {
   try {
+    cancelScheduledRetry(type, fileName);
+    const queue = processingQueues.get(type);
+    if (queue) {
+      queue.delete(fileName);
+    }
+
     if (config.processor === 'navigation') {
       // Clear navigation cache
       console.log(`[${type}] Clearing navigation cache for: ${fileName}`);
@@ -700,6 +842,9 @@ async function shutdown() {
 
   serviceStatus.status = 'shutting down';
   await updateServiceStatus();
+
+  pendingRetries.forEach(({ timeout }) => clearTimeout(timeout));
+  pendingRetries.clear();
 
   await redis.quit();
 
